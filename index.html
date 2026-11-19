@@ -3,1874 +3,910 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>3가족 펜션 장보기 & N빵 정산</title>
-  <!-- Tailwind CSS -->
+  <title>3가족 펜션 장보기 & 자동 정산</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Supabase JS SDK (선택적 실시간 공유용) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- Pretendard Font -->
-  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
     body {
       font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-      background-color: #f3f5f8;
-      color: #1e293b;
+      background-color: #f4f6f9;
       -webkit-tap-highlight-color: transparent;
     }
-    .no-scrollbar::-webkit-scrollbar {
-      display: none;
-    }
-    .no-scrollbar {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-    }
-    .transition-smooth {
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    @keyframes slideUp {
-      from { transform: translateY(16px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-    .animate-fade-in { animation: fadeIn 0.16s ease-out forwards; }
-    .animate-slide-up { animation: slideUp 0.2s ease-out forwards; }
   </style>
 </head>
-<body class="min-h-screen pb-28 select-none">
+<body class="text-slate-800 pb-24 max-w-md mx-auto min-h-screen bg-slate-50 shadow-xl relative">
 
-  <!-- 상단 고정 헤더 & 메인 탭 네비게이션 -->
-  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
-    <div class="max-w-xl mx-auto px-4 pt-3 pb-2.5">
-      <!-- 상단 타이틀 바 -->
-      <div class="flex items-center justify-between gap-2 mb-2.5">
-        <div class="min-w-0">
-          <div class="flex items-center gap-1.5 flex-wrap">
-            <span id="headerHeadcountBadge" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
-              어른 6 · 초등 8 (총 14명)
-            </span>
-            <span id="syncStatusBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600">
-              <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-              기기 저장 모드
-            </span>
-          </div>
-          <h1 class="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight mt-0.5 truncate">
-            🏕️ 3가족 펜션 장보기 & 정산
-          </h1>
+  <script>
+    // =========================================================================
+    // Supabase 실시간 공용 DB 설정 완료
+    // =========================================================================
+    const SUPABASE_URL = "https://izevedyzpnbptqpczxcy.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_st8TGZJQrykJPS78m34Naw_kR3eOxGw";
+    const TRIP_DOC_ID = "family_pension_main";
+  </script>
+
+  <!-- 상단 헤더 -->
+  <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 pt-3 pb-2">
+    <div class="flex items-center justify-between mb-2">
+      <div>
+        <div class="flex items-center gap-1.5">
+          <span class="bg-emerald-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">14명 · 3가족</span>
+          <span id="syncBadge" class="bg-slate-100 text-slate-500 text-[10px] font-semibold px-2 py-0.5 rounded-full">연결 확인 중...</span>
         </div>
-
-        <div class="flex items-center gap-1.5 shrink-0">
-          <!-- 실시간 공유 설정 버튼 -->
-          <button
-            id="openSyncModalBtn"
-            type="button"
-            class="inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 active:scale-95 transition"
-            title="3가족 실시간 공유 설정"
-          >
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-            </svg>
-            <span>실시간 공유</span>
-          </button>
-
-          <!-- 초기화 버튼 -->
-          <button
-            id="openResetModalBtn"
-            type="button"
-            class="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 active:scale-95 transition"
-            title="초기 리스트로 복원"
-            aria-label="초기 리스트로 복원"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          </button>
-        </div>
+        <h1 class="text-lg font-extrabold text-slate-900 mt-0.5">펜션 장보기 & N빵 정산</h1>
       </div>
+      <div class="flex items-center gap-1">
+        <button onclick="manualRefresh()" title="최신 내역 새로고침" class="p-2 rounded-lg text-slate-500 hover:text-emerald-600 hover:bg-slate-100 transition">
+          <i id="refreshIcon" class="fa-solid fa-arrows-rotate text-sm"></i>
+        </button>
+        <button onclick="resetAllData()" title="초기 리스트로 되돌리기" class="p-2 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-100 transition">
+          <i class="fa-solid fa-trash-can-arrow-up text-sm"></i>
+        </button>
+      </div>
+    </div>
 
-      <!-- 메인 2단 탭 네비게이션 -->
-      <nav class="grid grid-cols-2 gap-1.5 bg-slate-100 p-1 rounded-2xl" aria-label="메인 메뉴">
-        <button
-          id="tabBtnShopping"
-          type="button"
-          data-tab="shopping"
-          class="main-tab-btn py-2.5 px-3 rounded-xl text-sm font-extrabold bg-white text-slate-900 shadow-xs flex items-center justify-center gap-1.5 transition"
-        >
-          <span>🛒 장보기 체크</span>
-          <span id="tabShoppingBadge" class="text-[11px] px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 font-bold">0/0</span>
-        </button>
-        <button
-          id="tabBtnSettlement"
-          type="button"
-          data-tab="settlement"
-          class="main-tab-btn py-2.5 px-3 rounded-xl text-sm font-bold text-slate-600 hover:text-slate-900 flex items-center justify-center gap-1.5 transition"
-        >
-          <span>💰 3가족 정산</span>
-          <span id="tabSettlementBadge" class="text-[11px] px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 font-bold">N빵</span>
-        </button>
-      </nav>
+    <!-- 메인 탭 전환 -->
+    <div class="grid grid-cols-2 bg-slate-100 p-1 rounded-xl text-sm font-bold">
+      <button id="tabShopping" onclick="switchTab('shopping')" class="py-2 rounded-lg bg-white text-emerald-700 shadow-sm transition">
+        <i class="fa-solid fa-cart-shopping mr-1"></i> 장보기 체크
+      </button>
+      <button id="tabSettlement" onclick="switchTab('settlement')" class="py-2 rounded-lg text-slate-500 hover:text-slate-700 transition">
+        <i class="fa-solid fa-calculator mr-1"></i> 3가족 정산
+      </button>
     </div>
   </header>
 
-  <!-- ========================================================= -->
-  <!-- TAB 1: 장보기 체크리스트 뷰 -->
-  <!-- ========================================================= -->
-  <section id="viewShopping" class="max-w-xl mx-auto px-4 pt-3.5 space-y-4">
-    <!-- 요약 대시보드 카드 -->
-    <div class="bg-slate-900 text-white rounded-2xl p-4 shadow-sm">
-      <div class="flex items-end justify-between gap-2 mb-2.5">
+  <!-- ==================== 1. 장보기 체크 탭 ==================== -->
+  <main id="viewShopping" class="px-4 pt-3 space-y-4">
+    <!-- 요약 대시보드 -->
+    <div class="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl p-4 text-white shadow-md">
+      <div class="flex justify-between items-end mb-2">
         <div>
-          <p class="text-[11px] text-slate-400 font-medium">카트에 담은 품목</p>
-          <p class="text-lg font-extrabold tracking-tight mt-0.5">
-            <span id="checkedCountText" class="text-emerald-400">0</span>
-            <span class="text-slate-400 font-semibold text-sm">/ <span id="totalCountText">0</span>개</span>
-            <span id="progressPercentText" class="ml-1.5 text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">0%</span>
+          <p class="text-emerald-100 text-xs font-medium">장보기 진행률</p>
+          <p class="text-2xl font-extrabold tracking-tight">
+            <span id="checkedCount">0</span><span class="text-base font-normal text-emerald-100"> / <span id="totalCount">0</span>개 완료</span>
           </p>
         </div>
         <div class="text-right">
-          <p class="text-[11px] text-slate-400 font-medium">구매 확정액 / 전체 예산</p>
-          <p class="text-base font-extrabold mt-0.5">
-            <span id="checkedAmountText" class="text-amber-300">0원</span>
-            <span class="text-slate-400 font-normal text-xs"> / <span id="totalAmountText">0원</span></span>
+          <p class="text-emerald-100 text-xs font-medium">체크된 합계 / 전체 예상</p>
+          <p class="text-sm font-bold">
+            <span id="checkedAmount">0</span>원 <span class="text-emerald-200 font-normal">/ <span id="totalAmount">0</span>원</span>
           </p>
         </div>
       </div>
-
-      <!-- 진행률 바 -->
-      <div class="w-full h-2.5 bg-slate-700/90 rounded-full overflow-hidden">
-        <div
-          id="progressBarFill"
-          class="h-full bg-gradient-to-r from-emerald-400 to-teal-300 rounded-full transition-all duration-300 ease-out"
-          style="width: 0%"
-        ></div>
+      <div class="w-full bg-black/20 rounded-full h-2 overflow-hidden">
+        <div id="progressBar" class="bg-amber-300 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
       </div>
-
-      <!-- 안내 팁 & 카톡 복사 미니 바 -->
-      <div class="flex items-center justify-between gap-2 mt-3 pt-2.5 border-t border-slate-800 text-[11px] text-slate-300">
-        <span>💡 우측 <strong class="text-white">가족 배지</strong>를 누르면 결제자가 바로 바뀝니다</span>
-        <button
-          id="copyShoppingListBtn"
-          type="button"
-          class="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 font-bold transition"
-        >
-          <span>📋 카톡 복사</span>
+      <div class="flex justify-between items-center mt-3 pt-2.5 border-t border-white/15 text-xs">
+        <span class="text-emerald-100"><i class="fa-solid fa-circle-info mr-1"></i>우측 가족 버튼 터치로 결제자 지정</span>
+        <button onclick="copyShoppingText()" class="bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-lg font-semibold transition">
+          <i class="fa-regular fa-copy mr-1"></i>카톡 복사
         </button>
       </div>
     </div>
 
-    <!-- 상태 필터 필 & 카테고리 칩 -->
-    <div class="space-y-2">
-      <div class="grid grid-cols-3 gap-1 bg-slate-200/70 p-1 rounded-xl">
-        <button
-          type="button"
-          data-status="all"
-          class="status-pill py-1.5 px-2 rounded-lg text-xs font-extrabold bg-white text-slate-900 shadow-xs transition"
-        >
-          전체 (<span id="countAllPill">0</span>)
-        </button>
-        <button
-          type="button"
-          data-status="remaining"
-          class="status-pill py-1.5 px-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
-        >
-          미완료만 (<span id="countRemainingPill">0</span>)
-        </button>
-        <button
-          type="button"
-          data-status="checked"
-          class="status-pill py-1.5 px-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
-        >
-          완료됨 (<span id="countCheckedPill">0</span>)
-        </button>
+    <!-- 필터 바 -->
+    <div class="flex items-center justify-between gap-2">
+      <div class="flex gap-1.5 text-xs font-semibold">
+        <button onclick="setFilter('all')" id="filterAll" class="px-3 py-1.5 rounded-full bg-slate-800 text-white">전체</button>
+        <button onclick="setFilter('unchecked')" id="filterUnchecked" class="px-3 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200">미완료만</button>
+        <button onclick="setFilter('checked')" id="filterChecked" class="px-3 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200">완료됨</button>
       </div>
-
-      <!-- 가로 스크롤 카테고리 필터 -->
-      <div id="categoryFilterBar" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-        <!-- JS 렌더링 -->
-      </div>
+      <button onclick="openItemModal()" class="text-xs font-bold bg-emerald-600 text-white px-3 py-1.5 rounded-full shadow-sm hover:bg-emerald-700 transition">
+        <i class="fa-solid fa-plus mr-1"></i>품목 추가
+      </button>
     </div>
 
     <!-- 카테고리별 체크리스트 컨테이너 -->
-    <div id="checklistContainer" class="space-y-4">
-      <!-- JS 렌더링 -->
-    </div>
+    <div id="shoppingListContainer" class="space-y-4"></div>
+  </main>
 
-    <!-- 빈 상태 화면 -->
-    <div id="emptyShoppingState" class="hidden text-center py-12 px-4 bg-white rounded-2xl border border-slate-200/80 shadow-xs">
-      <div class="text-4xl mb-2">🛍️</div>
-      <h3 class="text-base font-extrabold text-slate-800">표시할 장보기 품목이 없습니다</h3>
-      <p class="text-xs text-slate-500 mt-1">상단 필터를 바꾸거나 아래 버튼으로 새 품목·영수증을 추가하세요.</p>
-    </div>
-  </section>
-
-  <!-- ========================================================= -->
-  <!-- TAB 2: 3가족 자동 N빵 정산 뷰 -->
-  <!-- ========================================================= -->
-  <section id="viewSettlement" class="hidden max-w-xl mx-auto px-4 pt-3.5 space-y-4">
-    <!-- 1. 정산 기준 설정 카드 -->
-    <div class="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-xs space-y-4">
-      <div class="flex items-center justify-between">
-        <h2 class="text-base font-extrabold text-slate-900 flex items-center gap-1.5">
-          <span>⚙️ 정산 방식 및 가족 구성</span>
-        </h2>
-        <span class="text-[11px] font-semibold text-slate-400">자동 실시간 계산</span>
+  <!-- ==================== 2. 3가족 정산 탭 ==================== -->
+  <main id="viewSettlement" class="hidden px-4 pt-3 space-y-4">
+    <!-- 가족 이름 & 인원 설정 카드 -->
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-extrabold text-slate-800"><i class="fa-solid fa-users text-emerald-600 mr-1.5"></i>가족별 이름 및 인원 (총 14명)</h2>
+        <span class="text-[11px] text-slate-400">터치해 이름 수정</span>
       </div>
+      <div class="space-y-2.5" id="familySettingsContainer"></div>
+    </div>
 
-      <!-- 정산 대상 범위 토글 (체크된 항목만 vs 전체) -->
-      <div class="flex items-center justify-between gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200/70">
+    <!-- 정산 기준 선택 -->
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+      <h2 class="text-sm font-extrabold text-slate-800 mb-2.5"><i class="fa-solid fa-scale-balanced text-indigo-600 mr-1.5"></i>정산 방식 선택</h2>
+      <div class="grid grid-cols-2 gap-2 text-xs font-bold mb-3">
+        <button id="modeEqual" onclick="setSplitMode('equal')" class="p-2.5 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-emerald-800 text-left">
+          <div>균등 1/3 N빵</div>
+          <div class="text-[11px] font-normal text-emerald-600 mt-0.5">세 가족 동일하게 분담</div>
+        </button>
+        <button id="modeHeadcount" onclick="setSplitMode('headcount')" class="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 text-left">
+          <div>인원수 비례 정산</div>
+          <div class="text-[11px] font-normal text-slate-400 mt-0.5">어른·초등 비율 반영</div>
+        </button>
+      </div>
+      <div id="childWeightBox" class="hidden bg-slate-50 p-2.5 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
+        <span class="font-semibold text-slate-600">초등학생 1인 가중치</span>
+        <div class="flex gap-1.5">
+          <button onclick="setChildWeight(0.5)" id="cw05" class="px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-bold">0.5명</button>
+          <button onclick="setChildWeight(0.7)" id="cw07" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 font-bold">0.7명</button>
+          <button onclick="setChildWeight(1.0)" id="cw10" class="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 font-bold">1.0명</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 추가 공용 지출 (숙소비, 숯불비, 주류 등) -->
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+      <div class="flex items-center justify-between mb-2.5">
+        <h2 class="text-sm font-extrabold text-slate-800"><i class="fa-solid fa-receipt text-amber-500 mr-1.5"></i>별도 결제 내역 (숙소·주류 등)</h2>
+        <button onclick="openExtraExpenseModal()" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg hover:bg-indigo-100">
+          + 영수증 추가
+        </button>
+      </div>
+      <div id="extraExpensesList" class="space-y-2 text-xs"></div>
+    </div>
+
+    <!-- 최종 정산 결과 카드 -->
+    <div class="bg-slate-900 text-white rounded-2xl p-4 shadow-lg space-y-3">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-2.5">
         <div>
-          <p class="text-xs font-extrabold text-slate-800">체크(구매 완료)된 항목만 정산</p>
-          <p class="text-[11px] text-slate-500 mt-0.5">끄면 장보기 리스트의 전체 예정 금액으로 계산합니다</p>
+          <p class="text-xs text-slate-400">총 지출 합계 (장보기 + 별도)</p>
+          <p id="grandTotalDisplay" class="text-2xl font-extrabold text-amber-300">0원</p>
         </div>
-        <label class="relative inline-flex items-center cursor-pointer shrink-0">
-          <input type="checkbox" id="settleCheckedOnlyToggle" class="sr-only peer" checked />
-          <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-        </label>
-      </div>
-
-      <!-- 분담 방식 선택 (균등 1/3 vs 인원 비례) -->
-      <div>
-        <label class="block text-xs font-bold text-slate-700 mb-1.5">분담 기준 선택</label>
-        <div class="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            data-split-mode="equal"
-            class="split-mode-btn py-2.5 px-3 rounded-xl border-2 border-emerald-600 bg-emerald-50/70 text-emerald-900 text-xs font-extrabold text-left transition"
-          >
-            <div>⚖️ 가족 균등 N빵</div>
-            <div class="text-[11px] font-medium text-emerald-700 mt-0.5">세 가족 1/3씩 동일 분담</div>
-          </button>
-          <button
-            type="button"
-            data-split-mode="headcount"
-            class="split-mode-btn py-2.5 px-3 rounded-xl border-2 border-slate-200 bg-white text-slate-700 text-xs font-extrabold text-left hover:border-slate-300 transition"
-          >
-            <div>👨‍👩‍👧‍👦 인원수 비례 정산</div>
-            <div class="text-[11px] font-medium text-slate-500 mt-0.5">어른·초등 인원 비율 반영</div>
-          </button>
-        </div>
-
-        <!-- 인원 비례 선택 시 초등학생 가중치 옵션 -->
-        <div id="childWeightBox" class="hidden mt-2.5 p-3 rounded-xl bg-amber-50/80 border border-amber-200/80 flex items-center justify-between gap-2">
-          <span class="text-xs font-bold text-amber-900">초등학생 1인 계산 비율</span>
-          <div class="inline-flex bg-white rounded-lg p-0.5 border border-amber-200">
-            <button
-              type="button"
-              data-child-weight="0.5"
-              class="child-weight-btn px-2.5 py-1 rounded-md text-xs font-extrabold bg-amber-500 text-white transition"
-            >
-              0.5명 (50%)
-            </button>
-            <button
-              type="button"
-              data-child-weight="1"
-              class="child-weight-btn px-2.5 py-1 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900 transition"
-            >
-              1.0명 (동일)
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 3가족 이름 & 인원 편집 -->
-      <div class="space-y-2 pt-1">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-slate-700">가족별 이름 및 인원 수정</span>
-          <span id="settlementHeadcountSummary" class="text-[11px] font-bold text-emerald-700">어른 6명 · 초등 8명</span>
-        </div>
-        <div id="familyConfigContainer" class="space-y-2">
-          <!-- JS로 3가족 입력 행 렌더링 -->
-        </div>
-      </div>
-    </div>
-
-    <!-- 2. 최종 송금 안내 카드 (가장 중요한 결과) -->
-    <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 text-white rounded-2xl p-4 shadow-md space-y-3.5">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <div>
-          <p class="text-[11px] text-slate-400 font-medium">정산 대상 총 지출액</p>
-          <p id="settleTotalSpend" class="text-2xl font-extrabold text-amber-300 tracking-tight mt-0.5">0원</p>
-        </div>
-        <button
-          id="copySettlementBtn"
-          type="button"
-          class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-950 font-extrabold text-xs shadow-sm transition"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
-          <span>카톡 정산 내역 복사</span>
+        <button onclick="copySettlementText()" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-extrabold text-xs px-3 py-2 rounded-xl transition">
+          <i class="fa-regular fa-copy mr-1"></i>정산서 카톡 복사
         </button>
       </div>
 
-      <div>
-        <p class="text-xs font-bold text-emerald-300 mb-2 flex items-center gap-1.5">
-          <span>💸 최소 이체 송금 가이드</span>
-        </p>
-        <div id="transferListContainer" class="space-y-2">
-          <!-- JS로 송금 경로 렌더링 -->
-        </div>
+      <!-- 가족별 지출/부담 요약 -->
+      <div id="familyBreakdown" class="space-y-2 text-xs"></div>
+
+      <!-- 최종 송금 가이드 -->
+      <div class="bg-slate-800 rounded-xl p-3 space-y-2">
+        <p class="text-xs font-bold text-emerald-400"><i class="fa-solid fa-paper-plane mr-1"></i>최종 송금 안내</p>
+        <div id="transferInstructions" class="space-y-1.5 text-sm font-bold"></div>
       </div>
     </div>
+  </main>
 
-    <!-- 3. 가족별 상세 정산 내역 카드 -->
-    <div class="space-y-2.5">
-      <h3 class="text-xs font-extrabold text-slate-600 px-1">가족별 결제 및 분담 상세</h3>
-      <div id="familyBreakdownContainer" class="space-y-2.5">
-        <!-- JS로 3가족 카드 렌더링 -->
+  <!-- ==================== 품목 추가/수정 모달 ==================== -->
+  <div id="itemModal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center">
+        <h3 id="itemModalTitle" class="text-base font-extrabold text-slate-900">장보기 품목 추가</h3>
+        <button onclick="closeItemModal()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
-    </div>
-  </section>
-
-  <!-- 하단 고정 플로팅 버튼 (품목 / 영수증 추가) -->
-  <div class="fixed bottom-0 inset-x-0 z-20 bg-gradient-to-t from-[#f3f5f8] via-[#f3f5f8]/95 to-transparent pt-4 pb-4 px-4 pointer-events-none">
-    <div class="max-w-xl mx-auto pointer-events-auto">
-      <button
-        id="openAddItemModalBtn"
-        type="button"
-        class="w-full py-3.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-extrabold text-base shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 transition"
-      >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.6" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-        </svg>
-        <span>품목 / 영수증 지출 추가</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- ========================================================= -->
-  <!-- MODAL 1: 품목 추가 / 수정 모달 -->
-  <!-- ========================================================= -->
-  <div
-    id="itemModal"
-    class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-xs p-0 sm:p-4 animate-fade-in"
-    role="dialog"
-    aria-modal="true"
-  >
-    <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl animate-slide-up max-h-[92vh] overflow-y-auto">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-        <h2 id="itemModalTitle" class="text-lg font-extrabold text-slate-900">새 품목 / 영수증 추가</h2>
-        <button
-          id="closeItemModalBtn"
-          type="button"
-          class="p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
-          aria-label="닫기"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      </div>
-
-      <form id="itemForm" class="space-y-3.5 mt-4">
-        <input type="hidden" id="editItemId" value="" />
-
-        <!-- 카테고리 -->
+      <input type="hidden" id="editItemId" />
+      <div class="space-y-3 text-sm">
         <div>
-          <label for="itemCategoryInput" class="block text-xs font-bold text-slate-700 mb-1">카테고리</label>
-          <select
-            id="itemCategoryInput"
-            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
-          ></select>
+          <label class="block text-xs font-bold text-slate-600 mb-1">카테고리</label>
+          <select id="itemCategory" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white font-medium">
+            <option value="단골집 포장">단골집 포장</option>
+            <option value="정육 (마트/정육점)">정육 (마트/정육점)</option>
+            <option value="식사 & 사리">식사 & 사리</option>
+            <option value="곁들임 & 소스">곁들임 & 소스</option>
+            <option value="음료 & 과일">음료 & 과일</option>
+            <option value="간식 & 디저트">간식 & 디저트</option>
+            <option value="일회용품 & 기타">일회용품 & 기타</option>
+          </select>
         </div>
-
-        <!-- 품목명 -->
         <div>
-          <label for="itemNameInput" class="block text-xs font-bold text-slate-700 mb-1">
-            품목명 / 지출 내역 <span class="text-rose-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="itemNameInput"
-            required
-            placeholder="예: 맥주 1박스, 숯불 바비큐 이용료, 아이스크림"
-            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
-          />
+          <label class="block text-xs font-bold text-slate-600 mb-1">품목명</label>
+          <input type="text" id="itemName" placeholder="예: 삼겹살 + 목살" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
         </div>
-
-        <!-- 수량/메모 -->
-        <div>
-          <label for="itemMemoInput" class="block text-xs font-bold text-slate-700 mb-1">수량 / 메모 (선택)</label>
-          <input
-            type="text"
-            id="itemMemoInput"
-            placeholder="예: 2팩, 영수증 합산 등"
-            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
-          />
-        </div>
-
-        <!-- 금액 & 결제 가족 -->
         <div class="grid grid-cols-2 gap-2.5">
           <div>
-            <label for="itemPriceInput" class="block text-xs font-bold text-slate-700 mb-1">금액 (원)</label>
-            <div class="relative">
-              <input
-                type="number"
-                id="itemPriceInput"
-                min="0"
-                step="10"
-                inputmode="numeric"
-                placeholder="0"
-                class="w-full pl-3 pr-7 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
-              />
-              <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">원</span>
-            </div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">수량 / 메모</label>
+            <input type="text" id="itemNote" placeholder="예: 2.5kg" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
           </div>
-
           <div>
-            <label for="itemPayerInput" class="block text-xs font-bold text-slate-700 mb-1">결제한 가족</label>
-            <select
-              id="itemPayerInput"
-              class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
-            ></select>
+            <label class="block text-xs font-bold text-slate-600 mb-1">금액 (원)</label>
+            <input type="number" id="itemPrice" placeholder="0" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
           </div>
         </div>
-
-        <!-- 구매 완료 체크 상태 -->
-        <label class="flex items-center gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200/80 cursor-pointer">
-          <input type="checkbox" id="itemCheckedInput" class="w-4 h-4 accent-emerald-600 rounded" />
-          <span class="text-xs font-bold text-slate-700">이미 결제/구매 완료됨 (정산에 즉시 포함)</span>
-        </label>
-
-        <div class="flex items-center gap-2.5 pt-2">
-          <button
-            type="button"
-            id="cancelItemModalBtn"
-            class="flex-1 py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition"
-          >
-            취소
-          </button>
-          <button
-            type="submit"
-            class="flex-[2] py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-md shadow-emerald-600/20 transition"
-          >
-            저장하기
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- ========================================================= -->
-  <!-- MODAL 2: 3가족 실시간 공유 설정 (Supabase 선택 연동) -->
-  <!-- ========================================================= -->
-  <div
-    id="syncModal"
-    class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-xs p-0 sm:p-4 animate-fade-in"
-    role="dialog"
-    aria-modal="true"
-  >
-    <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl animate-slide-up max-h-[92vh] overflow-y-auto">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
         <div>
-          <h2 class="text-lg font-extrabold text-slate-900">🔗 3가족 실시간 공유 설정</h2>
-          <p class="text-[11px] text-slate-500 mt-0.5">선택 사항 · 연결 시 세 가족 폰에서 동시에 체크/정산됩니다</p>
+          <label class="block text-xs font-bold text-slate-600 mb-1">결제한 가족</label>
+          <select id="itemPayer" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white font-medium"></select>
         </div>
-        <button
-          id="closeSyncModalBtn"
-          type="button"
-          class="p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
       </div>
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeItemModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-bold text-sm">취소</button>
+        <button onclick="saveItem()" class="flex-1 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700">저장하기</button>
+      </div>
+    </div>
+  </div>
 
-      <div class="space-y-4 mt-4">
-        <!-- 현재 연결 상태 배너 -->
-        <div id="syncModalStatusBanner" class="p-3 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold">
-          현재 <strong>이 기기 단독 저장 모드</strong>로 작동 중입니다.
+  <!-- ==================== 별도 지출 추가 모달 ==================== -->
+  <div id="extraModal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4">
+    <div class="bg-white w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center">
+        <h3 class="text-base font-extrabold text-slate-900">별도 공용 지출 추가</h3>
+        <button onclick="closeExtraExpenseModal()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <div class="space-y-3 text-sm">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">지출 내역</label>
+          <input type="text" id="extraTitle" placeholder="예: 펜션 숯불바비큐 이용료, 주류 등" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
         </div>
-
-        <form id="syncForm" class="space-y-3">
+        <div class="grid grid-cols-2 gap-2.5">
           <div>
-            <label for="supabaseUrlInput" class="block text-xs font-bold text-slate-700 mb-1">Supabase Project URL</label>
-            <input
-              type="url"
-              id="supabaseUrlInput"
-              placeholder="https://xxxx.supabase.co"
-              class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
-            />
+            <label class="block text-xs font-bold text-slate-600 mb-1">금액 (원)</label>
+            <input type="number" id="extraAmount" placeholder="30000" class="w-full border border-slate-300 rounded-xl px-3 py-2.5" />
           </div>
-
           <div>
-            <label for="supabaseKeyInput" class="block text-xs font-bold text-slate-700 mb-1">Supabase Anon Public Key</label>
-            <input
-              type="text"
-              id="supabaseKeyInput"
-              placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..."
-              class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-mono text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
-            />
+            <label class="block text-xs font-bold text-slate-600 mb-1">결제한 가족</label>
+            <select id="extraPayer" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white font-medium"></select>
           </div>
-
-          <div>
-            <label for="roomCodeInput" class="block text-xs font-bold text-slate-700 mb-1">공유 방 코드 (세 가족 동일하게 입력)</label>
-            <input
-              type="text"
-              id="roomCodeInput"
-              placeholder="예: PENSION2026"
-              class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm font-extrabold uppercase tracking-wider text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
-            />
-          </div>
-
-          <div class="flex items-center gap-2 pt-1">
-            <button
-              type="button"
-              id="disconnectSyncBtn"
-              class="hidden flex-1 py-2.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs transition"
-            >
-              연결 해제
-            </button>
-            <button
-              type="submit"
-              class="flex-[2] py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm shadow-md shadow-indigo-600/20 transition"
-            >
-              실시간 방 연결 / 동기화
-            </button>
-          </div>
-        </form>
-
-        <!-- Supabase 테이블 생성 1회용 SQL 안내 -->
-        <details class="bg-slate-50 rounded-xl border border-slate-200/80 p-3 text-xs">
-          <summary class="font-bold text-slate-700 cursor-pointer">
-            🛠️ 무료 Supabase 테이블 생성 SQL (최초 1회)
-          </summary>
-          <p class="text-[11px] text-slate-500 mt-1.5 mb-2 leading-relaxed">
-            무료 Supabase 프로젝트의 <strong>SQL Editor</strong>에 아래 5줄을 붙여넣고 Run을 누르면 바로 공유 방이 작동합니다.
-          </p>
-          <pre id="sqlSnippetText" class="bg-slate-900 text-emerald-300 p-2.5 rounded-lg text-[10px] font-mono overflow-x-auto leading-relaxed">create table if not exists pension_rooms (
-  room_code text primary key,
-  data jsonb not null,
-  updated_at timestamptz default now()
-);
-alter table pension_rooms enable row level security;
-create policy "public_rw" on pension_rooms for all using (true) with check (true);</pre>
-          <button
-            type="button"
-            id="copySqlBtn"
-            class="mt-2 w-full py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-[11px] transition"
-          >
-            SQL 코드 복사하기
-          </button>
-        </details>
+        </div>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeExtraExpenseModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-bold text-sm">취소</button>
+        <button onclick="saveExtraExpense()" class="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm">추가하기</button>
       </div>
     </div>
   </div>
 
-  <!-- ========================================================= -->
-  <!-- MODAL 3: 초기 리스트 복원 확인 모달 -->
-  <!-- ========================================================= -->
-  <div
-    id="resetModal"
-    class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fade-in"
-    role="dialog"
-    aria-modal="true"
-  >
-    <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-slide-up text-center">
-      <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-3">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-      </div>
-      <h3 class="text-lg font-extrabold text-slate-900">초기 데이터로 복원할까요?</h3>
-      <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
-        장보기 체크 내역, 결제자 지정, 추가한 영수증과 가족 설정이<br />처음 기본 리스트(14명 기준)로 초기화됩니다.
-      </p>
-      <div class="flex items-center gap-2.5 mt-5">
-        <button
-          type="button"
-          id="cancelResetBtn"
-          class="flex-1 py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm transition"
-        >
-          취소
-        </button>
-        <button
-          type="button"
-          id="confirmResetBtn"
-          class="flex-1 py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm shadow-md shadow-rose-600/20 transition"
-        >
-          복원하기
-        </button>
-      </div>
-    </div>
+  <!-- 토스트 알림 -->
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2">
+    <span id="toastMsg">완료되었습니다.</span>
+    <button id="toastUndoBtn" onclick="undoDelete()" class="hidden text-amber-300 underline ml-1">실행 취소</button>
   </div>
-
-  <!-- 하단 토스트 알림 -->
-  <div id="toastContainer" class="fixed bottom-20 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
-    <div
-      id="toastBox"
-      class="hidden items-center justify-between gap-3 bg-slate-900/95 text-white px-4 py-3 rounded-2xl shadow-xl text-xs sm:text-sm font-medium max-w-md w-full pointer-events-auto"
-    >
-      <span id="toastMessage" class="truncate">알림</span>
-      <button
-        id="toastUndoBtn"
-        type="button"
-        class="hidden shrink-0 px-2.5 py-1 rounded-lg bg-amber-400 text-slate-900 font-extrabold text-xs hover:bg-amber-300 transition"
-      >
-        실행 취소
-      </button>
-    </div>
-  </div>
-
-  <!-- 클립보드 복사 헬퍼 -->
-  <textarea id="clipboardHelper" class="sr-only" aria-hidden="true"></textarea>
 
   <script>
-    /**
-     * 3가족(14명) 펜션 장보기 & N빵 자동 정산 앱
-     * - LocalStorage 즉시 작동 + 선택적 Supabase 실시간 방 공유
-     */
-    const STORAGE_STATE_KEY = 'pension_3fam_state_v2';
-    const STORAGE_SYNC_KEY = 'pension_3fam_sync_cfg_v2';
-
-    // 카테고리 정의
-    const CATEGORIES = [
-      { id: '단골집 포장', icon: '🍲', badge: 'bg-orange-100 text-orange-800' },
-      { id: '정육', icon: '🥩', badge: 'bg-rose-100 text-rose-800' },
-      { id: '식사 & 사리', icon: '🍚', badge: 'bg-amber-100 text-amber-800' },
-      { id: '곁들임 & 소스', icon: '🥬', badge: 'bg-lime-100 text-lime-800' },
-      { id: '음료 & 과일', icon: '🍊', badge: 'bg-sky-100 text-sky-800' },
-      { id: '간식 & 디저트', icon: '🍫', badge: 'bg-purple-100 text-purple-800' },
-      { id: '일회용품 & 기타', icon: '🧻', badge: 'bg-slate-200 text-slate-800' },
-      { id: '추가 지출 (숙박/기타)', icon: '🧾', badge: 'bg-indigo-100 text-indigo-800' }
-    ];
-
-    // 가족 배지 스타일
-    const FAMILY_STYLES = [
-      { id: 'fam1', pill: 'bg-emerald-100 text-emerald-800 border-emerald-200', dot: 'bg-emerald-500' },
-      { id: 'fam2', pill: 'bg-sky-100 text-sky-800 border-sky-200', dot: 'bg-sky-500' },
-      { id: 'fam3', pill: 'bg-amber-100 text-amber-800 border-amber-200', dot: 'bg-amber-500' }
-    ];
-
-    // 초기 3가족 구성 (성인 6, 초등 8 = 14명)
-    const DEFAULT_FAMILIES = [
-      { id: 'fam1', name: '가족 1 (총무)', adults: 2, kids: 2 },
-      { id: 'fam2', name: '가족 2', adults: 2, kids: 3 },
-      { id: 'fam3', name: '가족 3', adults: 2, kids: 3 }
-    ];
-
-    // 초기 장보기 리스트 (초슬림 저녁 + 간식 통합)
-    const DEFAULT_ITEMS = [
-      { id: 'i1', category: '단골집 포장', name: '부대찌개 3인분 포장', memo: '육수 넉넉히 요청', price: 30000, payerId: 'fam1', checked: false },
-      { id: 'i2', category: '정육', name: '삼겹살 + 목살 2.5kg', memo: '구이용', price: 65000, payerId: 'fam1', checked: false },
-      { id: 'i3', category: '정육', name: '구이용 소시지 1팩', memo: '아이들 구이 & 찌개 사리', price: 8000, payerId: 'fam1', checked: false },
-      { id: 'i4', category: '정육', name: '햄/스팸류 1캔', memo: '구이 및 찌개 사리 겸용', price: 5000, payerId: 'fam1', checked: false },
-      { id: 'i5', category: '식사 & 사리', name: '라면사리 3~4개', memo: '부대찌개용', price: 2500, payerId: 'fam1', checked: false },
-      { id: 'i6', category: '식사 & 사리', name: '일반 라면 1번들 (5봉)', memo: '다음 날 아침용', price: 4500, payerId: 'fam1', checked: false },
-      { id: 'i7', category: '식사 & 사리', name: '햇반 12개', memo: '초등 8명 + 어른 식사용', price: 13000, payerId: 'fam1', checked: false },
-      { id: 'i8', category: '식사 & 사리', name: '도시락김 1묶음 (12~16봉)', memo: '아이들 반찬', price: 5000, payerId: 'fam1', checked: false },
-      { id: 'i9', category: '곁들임 & 소스', name: '맛김치(썰은 김치) 1kg', memo: '구이 및 찌개 곁들임', price: 9000, payerId: 'fam1', checked: false },
-      { id: 'i10', category: '곁들임 & 소스', name: '구이용 버섯 (새송이/양송이) 1~2팩', memo: '통구이용', price: 4000, payerId: 'fam1', checked: false },
-      { id: 'i11', category: '곁들임 & 소스', name: '쌈장 1통', memo: '', price: 3000, payerId: 'fam1', checked: false },
-      { id: 'i12', category: '곁들임 & 소스', name: '허브솔트(소금) 1개', memo: '고기 밑간용', price: 3000, payerId: 'fam1', checked: false },
-      { id: 'i13', category: '음료 & 과일', name: '생수 2L × 6병', memo: '찌개 육수 보충 겸용', price: 4500, payerId: 'fam1', checked: false },
-      { id: 'i14', category: '음료 & 과일', name: '탄산/아이들 음료 1.5L × 3~4병', memo: '', price: 8000, payerId: 'fam1', checked: false },
-      { id: 'i15', category: '음료 & 과일', name: '제철 과일 1종 (귤, 방울토마토 등)', memo: '씻어먹는 과일', price: 12000, payerId: 'fam1', checked: false },
-      { id: 'i16', category: '간식 & 디저트', name: '대용량 짭짤한 과자 2~3봉 (포카칩, 꼬깔콘 등)', memo: '', price: 6000, payerId: 'fam1', checked: false },
-      { id: 'i17', category: '간식 & 디저트', name: '대용량 달콤한 과자 2~3봉 (홈런볼, 칸쵸 등)', memo: '', price: 6000, payerId: 'fam1', checked: false },
-      { id: 'i18', category: '간식 & 디저트', name: '대용량 젤리 & 초콜릿 1묶음씩 (게임 상품용)', memo: '', price: 8000, payerId: 'fam1', checked: false },
-      { id: 'i19', category: '간식 & 디저트', name: '개별 포장 파이류 1박스 (초코파이, 몽쉘 등)', memo: '12~16개입', price: 5000, payerId: 'fam1', checked: false },
-      { id: 'i20', category: '간식 & 디저트', name: '마시멜로 1봉 + 나무꼬치', memo: '바비큐 숯불 디저트', price: 3500, payerId: 'fam1', checked: false },
-      { id: 'i21', category: '간식 & 디저트', name: '쫀드기 또는 쥐포 1팩', memo: '숯불 구이 간식/안주', price: 4000, payerId: 'fam1', checked: false },
-      { id: 'i22', category: '일회용품 & 기타', name: '종이컵, 접시, 나무젓가락, 물티슈, 키친타월, 쓰레기봉투', memo: '펜션 비치 확인 후 구매', price: 8000, payerId: 'fam1', checked: false }
-    ];
-
-    // 애플리케이션 전역 상태
-    let appState = {
-      items: [],
-      families: [],
-      settlementSettings: {
-        checkedOnly: true,
-        splitMode: 'equal', // 'equal' | 'headcount'
-        childWeight: 0.5    // 0.5 | 1
-      },
-      updatedAt: Date.now()
+    const DEFAULT_STATE = {
+      families: [
+        { id: 0, name: '가족 1', adults: 2, kids: 2 },
+        { id: 1, name: '가족 2', adults: 2, kids: 3 },
+        { id: 2, name: '가족 3', adults: 2, kids: 3 }
+      ],
+      splitMode: 'equal',
+      childWeight: 0.5,
+      items: [
+        { id: '1', category: '단골집 포장', name: '부대찌개 3인분 포장', note: '육수 넉넉히 요청', price: 30000, checked: false, payer: 0 },
+        { id: '2', category: '정육 (마트/정육점)', name: '삼겹살 + 목살', note: '2.5kg', price: 65000, checked: false, payer: 0 },
+        { id: '3', category: '정육 (마트/정육점)', name: '구이용 소시지', note: '1팩', price: 8000, checked: false, payer: 0 },
+        { id: '4', category: '정육 (마트/정육점)', name: '햄 / 스팸류', note: '1캔 (부대찌개 사리 겸용)', price: 5000, checked: false, payer: 0 },
+        { id: '5', category: '식사 & 사리', name: '라면사리', note: '3~4개', price: 2500, checked: false, payer: 0 },
+        { id: '6', category: '식사 & 사리', name: '일반 라면', note: '1번들 (5봉 / 다음날 아침)', price: 4500, checked: false, payer: 0 },
+        { id: '7', category: '식사 & 사리', name: '햇반', note: '12개', price: 13000, checked: false, payer: 0 },
+        { id: '8', category: '식사 & 사리', name: '도시락김', note: '1묶음 (12~16봉)', price: 5000, checked: false, payer: 0 },
+        { id: '9', category: '곁들임 & 소스', name: '맛김치 (썰은 김치)', note: '1kg', price: 9000, checked: false, payer: 0 },
+        { id: '10', category: '곁들임 & 소스', name: '구이용 버섯 (새송이/양송이)', note: '1~2팩', price: 4000, checked: false, payer: 0 },
+        { id: '11', category: '곁들임 & 소스', name: '쌈장 & 허브솔트(소금)', note: '각 1개', price: 6000, checked: false, payer: 0 },
+        { id: '12', category: '음료 & 과일', name: '생수 2L', note: '6병 (찌개 육수 겸용)', price: 4500, checked: false, payer: 0 },
+        { id: '13', category: '음료 & 과일', name: '탄산 / 아이들 음료 1.5L', note: '3~4병', price: 8000, checked: false, payer: 0 },
+        { id: '14', category: '음료 & 과일', name: '제철 과일 1종', note: '귤, 방울토마토 등', price: 12000, checked: false, payer: 0 },
+        { id: '15', category: '간식 & 디저트', name: '대용량 짭짤한 과자', note: '2~3봉 (포카칩, 꼬깔콘 등)', price: 7000, checked: false, payer: 1 },
+        { id: '16', category: '간식 & 디저트', name: '대용량 달콤한 과자', note: '2~3봉 (홈런볼, 칸쵸 등)', price: 7000, checked: false, payer: 1 },
+        { id: '17', category: '간식 & 디저트', name: '대용량 젤리 & 초콜릿', note: '각 1묶음 (게임 상품용)', price: 8000, checked: false, payer: 1 },
+        { id: '18', category: '간식 & 디저트', name: '개별 포장 파이류 1박스', note: '초코파이, 몽쉘 등 (12~16입)', price: 5000, checked: false, payer: 1 },
+        { id: '19', category: '간식 & 디저트', name: '마시멜로 + 나무꼬치 & 쫀드기', note: '숯불 디저트용', price: 5000, checked: false, payer: 1 },
+        { id: '20', category: '일회용품 & 기타', name: '일회용품 세트', note: '종이컵, 접시, 나무젓가락, 물티슈, 키친타월', price: 8000, checked: false, payer: 0 }
+      ],
+      extraExpenses: []
     };
 
-    // UI 필터 상태
-    let activeTab = 'shopping'; // 'shopping' | 'settlement'
-    let statusFilter = 'all';   // 'all' | 'remaining' | 'checked'
-    let categoryFilter = 'all'; // 'all' | category.id
-
-    // 실행 취소(Undo) 및 토스트 상태
-    let lastDeletedItem = null;
-    let lastDeletedIndex = -1;
-    let toastTimeout = null;
-
-    // Supabase 실시간 동기화 상태
-    let syncConfig = { url: '', key: '', roomCode: '' };
+    const STORAGE_KEY = 'pension_trip_3families_shared_v1';
+    let state = loadLocalState();
+    let currentFilter = 'all';
+    let lastDeleted = null;
     let supabaseClient = null;
-    let realtimeChannel = null;
-    let pollTimer = null;
-    let isRemoteUpdating = false;
+    let isCloudConnected = false;
 
-    // 유틸리티 함수
-    function formatKRW(val) {
-      const num = Math.round(Number(val) || 0);
-      return num.toLocaleString('ko-KR') + '원';
+    function loadLocalState() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) {}
+      }
+      return JSON.parse(JSON.stringify(DEFAULT_STATE));
     }
 
-    function escapeHTML(str) {
-      if (!str) return '';
+    async function saveState(pushRemote = true) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderAll();
+      if (pushRemote && isCloudConnected && supabaseClient) {
+        await pushToCloud();
+      }
+    }
+
+    // ==================== 클라우드 자동 동기화 ====================
+    async function initCloudSync() {
+      const hasValidKeys =
+        typeof SUPABASE_URL === 'string' &&
+        SUPABASE_URL.startsWith('https://') &&
+        typeof SUPABASE_ANON_KEY === 'string' &&
+        SUPABASE_ANON_KEY.length > 20;
+
+      if (!hasValidKeys || !window.supabase) {
+        updateSyncBadge('local');
+        return;
+      }
+
+      try {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        updateSyncBadge('syncing');
+
+        // 1. 페이지 접속 시 서버 최신 데이터 불러오기
+        await fetchFromCloud(true);
+
+        // 2. 다른 가족이 수정할 때 실시간 구독
+        supabaseClient
+          .channel('pension_sync_channel')
+          .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'pension_trip_state',
+            filter: `id=eq.${TRIP_DOC_ID}`
+          }, payload => {
+            if (payload.new && payload.new.payload) {
+              state = payload.new.payload;
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+              renderAll();
+              showToast('다른 가족이 내역을 업데이트했습니다.');
+            }
+          })
+          .subscribe();
+
+        // 3. 백그라운드에서 다시 화면을 켰을 때(포커스 복귀 시) 최신 내역 자동 동기화
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible' && isCloudConnected) {
+            fetchFromCloud(false);
+          }
+        });
+
+        isCloudConnected = true;
+        updateSyncBadge('connected');
+      } catch (err) {
+        console.error('Cloud sync error:', err);
+        isCloudConnected = false;
+        updateSyncBadge('error');
+      }
+    }
+
+    async function fetchFromCloud(initIfEmpty = false) {
+      if (!supabaseClient) return;
+      const { data, error } = await supabaseClient
+        .from('pension_trip_state')
+        .select('payload')
+        .eq('id', TRIP_DOC_ID)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data && data.payload) {
+        state = data.payload;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        renderAll();
+      } else if (initIfEmpty) {
+        await pushToCloud();
+      }
+    }
+
+    async function pushToCloud() {
+      if (!supabaseClient) return;
+      updateSyncBadge('syncing');
+      const { error } = await supabaseClient
+        .from('pension_trip_state')
+        .upsert({
+          id: TRIP_DOC_ID,
+          payload: state,
+          updated_at: new Date().toISOString()
+        });
+      updateSyncBadge(error ? 'error' : 'connected');
+    }
+
+    async function manualRefresh() {
+      const icon = document.getElementById('refreshIcon');
+      icon.classList.add('fa-spin');
+      if (isCloudConnected) {
+        await fetchFromCloud(false);
+        showToast('최신 공용 내역을 불러왔습니다.');
+      } else {
+        renderAll();
+        showToast('로컬 내역이 새로고침되었습니다.');
+      }
+      setTimeout(() => icon.classList.remove('fa-spin'), 500);
+    }
+
+    function updateSyncBadge(status) {
+      const badge = document.getElementById('syncBadge');
+      if (status === 'connected') {
+        badge.className = 'bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-full';
+        badge.innerHTML = '<i class="fa-solid fa-cloud mr-1"></i>실시간 공유 중';
+      } else if (status === 'syncing') {
+        badge.className = 'bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full';
+        badge.textContent = '동기화 중...';
+      } else if (status === 'error') {
+        badge.className = 'bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded-full';
+        badge.textContent = 'DB 연결 오류';
+      } else {
+        badge.className = 'bg-slate-100 text-slate-500 text-[10px] font-semibold px-2 py-0.5 rounded-full';
+        badge.textContent = '로컬 전용 모드';
+      }
+    }
+
+    // ==================== UI 및 리스트 로직 ====================
+    function switchTab(tab) {
+      const isShop = tab === 'shopping';
+      document.getElementById('viewShopping').classList.toggle('hidden', !isShop);
+      document.getElementById('viewSettlement').classList.toggle('hidden', isShop);
+
+      document.getElementById('tabShopping').className = isShop
+        ? 'py-2 rounded-lg bg-white text-emerald-700 shadow-sm transition'
+        : 'py-2 rounded-lg text-slate-500 hover:text-slate-700 transition';
+      document.getElementById('tabSettlement').className = !isShop
+        ? 'py-2 rounded-lg bg-white text-indigo-700 shadow-sm transition'
+        : 'py-2 rounded-lg text-slate-500 hover:text-slate-700 transition';
+    }
+
+    function setFilter(f) {
+      currentFilter = f;
+      ['all', 'unchecked', 'checked'].forEach(key => {
+        const btn = document.getElementById('filter' + key.charAt(0).toUpperCase() + key.slice(1));
+        btn.className = key === f
+          ? 'px-3 py-1.5 rounded-full bg-slate-800 text-white'
+          : 'px-3 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200';
+      });
+      renderShoppingList();
+    }
+
+    function renderShoppingList() {
+      const container = document.getElementById('shoppingListContainer');
+      const totalItems = state.items.length;
+      const checkedItems = state.items.filter(i => i.checked).length;
+      const totalAmt = state.items.reduce((s, i) => s + (Number(i.price) || 0), 0);
+      const checkedAmt = state.items.filter(i => i.checked).reduce((s, i) => s + (Number(i.price) || 0), 0);
+
+      document.getElementById('checkedCount').textContent = checkedItems;
+      document.getElementById('totalCount').textContent = totalItems;
+      document.getElementById('checkedAmount').textContent = checkedAmt.toLocaleString();
+      document.getElementById('totalAmount').textContent = totalAmt.toLocaleString();
+      const pct = totalItems === 0 ? 0 : Math.round((checkedItems / totalItems) * 100);
+      document.getElementById('progressBar').style.width = pct + '%';
+
+      const filtered = state.items.filter(item => {
+        if (currentFilter === 'unchecked') return !item.checked;
+        if (currentFilter === 'checked') return item.checked;
+        return true;
+      });
+
+      const categories = [...new Set(filtered.map(i => i.category))];
+      if (categories.length === 0) {
+        container.innerHTML = `<div class="text-center py-12 text-slate-400 text-sm bg-white rounded-2xl border border-slate-200">표시할 품목이 없습니다.</div>`;
+        return;
+      }
+
+      const payerColors = [
+        'bg-emerald-50 text-emerald-700 border-emerald-200',
+        'bg-sky-50 text-sky-700 border-sky-200',
+        'bg-amber-50 text-amber-700 border-amber-200'
+      ];
+
+      container.innerHTML = categories.map(cat => {
+        const catItems = filtered.filter(i => i.category === cat);
+        const rows = catItems.map(item => {
+          const famName = state.families[item.payer]?.name || '가족 1';
+          const badgeClass = payerColors[item.payer % 3];
+          return `
+            <div class="flex items-center justify-between p-3 bg-white rounded-xl border ${item.checked ? 'border-slate-100 bg-slate-50/70' : 'border-slate-200 shadow-xs'} transition">
+              <div onclick="toggleItem('${item.id}')" class="flex items-start gap-3 flex-1 cursor-pointer select-none pr-2">
+                <div class="mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition ${item.checked ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-300 bg-white'}">
+                  ${item.checked ? '<i class="fa-solid fa-check text-[11px]"></i>' : ''}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-bold leading-snug ${item.checked ? 'line-through text-slate-400' : 'text-slate-800'}">${escapeHtml(item.name)}</p>
+                  <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5 text-xs ${item.checked ? 'text-slate-400' : 'text-slate-500'}">
+                    ${item.note ? `<span>${escapeHtml(item.note)}</span>` : ''}
+                    <span class="font-semibold ${item.checked ? 'text-slate-400' : 'text-slate-700'}">${(Number(item.price) || 0).toLocaleString()}원</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-1 shrink-0">
+                <button onclick="cyclePayer('${item.id}')" title="결제 가족 변경" class="text-[11px] font-bold px-2 py-1 rounded-lg border ${badgeClass} active:scale-95 transition">
+                  ${escapeHtml(famName)}
+                </button>
+                <button onclick="openItemModal('${item.id}')" class="p-1.5 text-slate-400 hover:text-indigo-600">
+                  <i class="fa-solid fa-pen text-xs"></i>
+                </button>
+                <button onclick="deleteItem('${item.id}')" class="p-1.5 text-slate-400 hover:text-rose-500">
+                  <i class="fa-solid fa-trash text-xs"></i>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <section class="space-y-2">
+            <div class="flex items-center justify-between px-1">
+              <h3 class="text-xs font-extrabold text-slate-500 uppercase tracking-wider">${escapeHtml(cat)}</h3>
+              <span class="text-[11px] font-semibold text-slate-400">${catItems.filter(i=>i.checked).length}/${catItems.length}</span>
+            </div>
+            <div class="space-y-2">${rows}</div>
+          </section>
+        `;
+      }).join('');
+    }
+
+    function toggleItem(id) {
+      const item = state.items.find(i => i.id === id);
+      if (item) {
+        item.checked = !item.checked;
+        saveState();
+      }
+    }
+
+    function cyclePayer(id) {
+      const item = state.items.find(i => i.id === id);
+      if (item) {
+        item.payer = (item.payer + 1) % 3;
+        saveState();
+      }
+    }
+
+    function deleteItem(id) {
+      const idx = state.items.findIndex(i => i.id === id);
+      if (idx > -1) {
+        lastDeleted = { item: state.items[idx], index: idx };
+        state.items.splice(idx, 1);
+        saveState();
+        showToast('품목이 삭제되었습니다.', true);
+      }
+    }
+
+    function undoDelete() {
+      if (lastDeleted) {
+        state.items.splice(lastDeleted.index, 0, lastDeleted.item);
+        lastDeleted = null;
+        saveState();
+        hideToast();
+      }
+    }
+
+    function openItemModal(id = null) {
+      const payerSelect = document.getElementById('itemPayer');
+      payerSelect.innerHTML = state.families.map(f => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('');
+
+      if (id) {
+        const item = state.items.find(i => i.id === id);
+        document.getElementById('itemModalTitle').textContent = '장보기 품목 수정';
+        document.getElementById('editItemId').value = item.id;
+        document.getElementById('itemCategory').value = item.category;
+        document.getElementById('itemName').value = item.name;
+        document.getElementById('itemNote').value = item.note;
+        document.getElementById('itemPrice').value = item.price;
+        document.getElementById('itemPayer').value = item.payer;
+      } else {
+        document.getElementById('itemModalTitle').textContent = '새 장보기 품목 추가';
+        document.getElementById('editItemId').value = '';
+        document.getElementById('itemName').value = '';
+        document.getElementById('itemNote').value = '';
+        document.getElementById('itemPrice').value = '';
+        document.getElementById('itemPayer').value = 0;
+      }
+      document.getElementById('itemModal').classList.remove('hidden');
+    }
+
+    function closeItemModal() {
+      document.getElementById('itemModal').classList.add('hidden');
+    }
+
+    function saveItem() {
+      const id = document.getElementById('editItemId').value;
+      const category = document.getElementById('itemCategory').value;
+      const name = document.getElementById('itemName').value.trim();
+      const note = document.getElementById('itemNote').value.trim();
+      const price = parseInt(document.getElementById('itemPrice').value, 10) || 0;
+      const payer = parseInt(document.getElementById('itemPayer').value, 10) || 0;
+
+      if (!name) {
+        alert('품목명을 입력해 주세요.');
+        return;
+      }
+
+      if (id) {
+        const item = state.items.find(i => i.id === id);
+        if (item) Object.assign(item, { category, name, note, price, payer });
+      } else {
+        state.items.push({
+          id: Date.now().toString(),
+          category, name, note, price, checked: false, payer
+        });
+      }
+      closeItemModal();
+      saveState();
+      showToast(id ? '품목이 수정되었습니다.' : '새 품목이 추가되었습니다.');
+    }
+
+    // ==================== 정산 탭 로직 ====================
+    function renderSettlement() {
+      const famContainer = document.getElementById('familySettingsContainer');
+      famContainer.innerHTML = state.families.map(f => `
+        <div class="flex items-center justify-between bg-slate-50 px-3 py-2 rounded-xl border border-slate-200 text-xs">
+          <input type="text" value="${escapeHtml(f.name)}" onchange="updateFamilyName(${f.id}, this.value)"
+            class="font-bold text-slate-800 bg-transparent border-b border-dashed border-slate-300 focus:border-emerald-600 outline-none w-24 py-0.5" />
+          <div class="flex items-center gap-3 text-slate-600">
+            <div class="flex items-center gap-1">
+              <span>성인</span>
+              <button onclick="changeMember(${f.id}, 'adults', -1)" class="w-5 h-5 rounded bg-white border border-slate-300 font-bold">-</button>
+              <span class="w-4 text-center font-bold">${f.adults}</span>
+              <button onclick="changeMember(${f.id}, 'adults', 1)" class="w-5 h-5 rounded bg-white border border-slate-300 font-bold">+</button>
+            </div>
+            <div class="flex items-center gap-1">
+              <span>초등</span>
+              <button onclick="changeMember(${f.id}, 'kids', -1)" class="w-5 h-5 rounded bg-white border border-slate-300 font-bold">-</button>
+              <span class="w-4 text-center font-bold">${f.kids}</span>
+              <button onclick="changeMember(${f.id}, 'kids', 1)" class="w-5 h-5 rounded bg-white border border-slate-300 font-bold">+</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      const isEqual = state.splitMode === 'equal';
+      document.getElementById('modeEqual').className = isEqual
+        ? 'p-2.5 rounded-xl border-2 border-emerald-600 bg-emerald-50 text-emerald-800 text-left'
+        : 'p-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 text-left';
+      document.getElementById('modeHeadcount').className = !isEqual
+        ? 'p-2.5 rounded-xl border-2 border-indigo-600 bg-indigo-50 text-indigo-800 text-left'
+        : 'p-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 text-left';
+      document.getElementById('childWeightBox').classList.toggle('hidden', isEqual);
+
+      [0.5, 0.7, 1.0].forEach(w => {
+        const btn = document.getElementById('cw' + String(w).replace('.', ''));
+        if (btn) {
+          btn.className = state.childWeight === w
+            ? 'px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-bold'
+            : 'px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 font-bold';
+        }
+      });
+
+      const extraList = document.getElementById('extraExpensesList');
+      if (state.extraExpenses.length === 0) {
+        extraList.innerHTML = `<p class="text-slate-400 text-center py-2">추가된 별도 지출이 없습니다.</p>`;
+      } else {
+        extraList.innerHTML = state.extraExpenses.map(ex => `
+          <div class="flex items-center justify-between bg-slate-50 px-3 py-2 rounded-xl border border-slate-200">
+            <div>
+              <span class="font-bold text-slate-800">${escapeHtml(ex.title)}</span>
+              <span class="text-slate-400 ml-1.5">(${escapeHtml(state.families[ex.payer]?.name || '가족 1')})</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-slate-700">${Number(ex.amount).toLocaleString()}원</span>
+              <button onclick="deleteExtraExpense('${ex.id}')" class="text-slate-400 hover:text-rose-500"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      const paidByFamily = [0, 0, 0];
+      state.items.forEach(i => paidByFamily[i.payer] += (Number(i.price) || 0));
+      state.extraExpenses.forEach(ex => paidByFamily[ex.payer] += (Number(ex.amount) || 0));
+
+      const grandTotal = paidByFamily.reduce((a, b) => a + b, 0);
+      document.getElementById('grandTotalDisplay').textContent = grandTotal.toLocaleString() + '원';
+
+      let shares = [0, 0, 0];
+      if (isEqual) {
+        const each = Math.round(grandTotal / 3);
+        shares = [each, each, grandTotal - each * 2];
+      } else {
+        const weights = state.families.map(f => f.adults + f.kids * state.childWeight);
+        const totalWeight = weights.reduce((a, b) => a + b, 0) || 1;
+        shares = weights.map(w => Math.round((grandTotal * w) / totalWeight));
+        shares[0] += grandTotal - shares.reduce((a, b) => a + b, 0);
+      }
+
+      const balances = state.families.map((f, idx) => ({
+        id: f.id,
+        name: f.name,
+        paid: paidByFamily[idx],
+        share: shares[idx],
+        net: paidByFamily[idx] - shares[idx]
+      }));
+
+      document.getElementById('familyBreakdown').innerHTML = balances.map(b => {
+        const statusText = b.net > 0
+          ? `<span class="text-emerald-400 font-bold">+${b.net.toLocaleString()}원 받기</span>`
+          : b.net < 0
+            ? `<span class="text-rose-400 font-bold">${Math.abs(b.net).toLocaleString()}원 보내기</span>`
+            : `<span class="text-slate-400">정산 완료</span>`;
+        return `
+          <div class="flex justify-between items-center bg-slate-800/60 px-3 py-2 rounded-lg">
+            <div>
+              <span class="font-bold text-white">${escapeHtml(b.name)}</span>
+              <span class="text-slate-400 text-[11px] ml-1.5">결제 ${b.paid.toLocaleString()}원 / 부담 ${b.share.toLocaleString()}원</span>
+            </div>
+            <div>${statusText}</div>
+          </div>
+        `;
+      }).join('');
+
+      const debtors = balances.filter(b => b.net < -10).map(b => ({ name: b.name, amt: -b.net }));
+      const creditors = balances.filter(b => b.net > 10).map(b => ({ name: b.name, amt: b.net }));
+      const transfers = [];
+      let d = 0, c = 0;
+      while (d < debtors.length && c < creditors.length) {
+        const move = Math.min(debtors[d].amt, creditors[c].amt);
+        transfers.push(`${debtors[d].name} → ${creditors[c].name} : <span class="text-amber-300">${Math.round(move).toLocaleString()}원</span>`);
+        debtors[d].amt -= move;
+        creditors[c].amt -= move;
+        if (debtors[d].amt <= 10) d++;
+        if (creditors[c].amt <= 10) c++;
+      }
+
+      document.getElementById('transferInstructions').innerHTML = transfers.length > 0
+        ? transfers.map(t => `<div class="flex items-center gap-2"><i class="fa-solid fa-arrow-right text-emerald-400 text-xs"></i><span>${t}</span></div>`).join('')
+        : `<p class="text-xs text-slate-400 font-normal">추가로 주고받을 정산 금액이 없습니다.</p>`;
+    }
+
+    function updateFamilyName(id, val) {
+      const name = val.trim();
+      if (name) {
+        state.families[id].name = name;
+        saveState();
+      }
+    }
+
+    function changeMember(id, type, delta) {
+      const next = state.families[id][type] + delta;
+      if (next >= 0 && next <= 10) {
+        state.families[id][type] = next;
+        saveState();
+      }
+    }
+
+    function setSplitMode(mode) {
+      state.splitMode = mode;
+      saveState();
+    }
+
+    function setChildWeight(w) {
+      state.childWeight = w;
+      saveState();
+    }
+
+    function openExtraExpenseModal() {
+      const sel = document.getElementById('extraPayer');
+      sel.innerHTML = state.families.map(f => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('');
+      document.getElementById('extraTitle').value = '';
+      document.getElementById('extraAmount').value = '';
+      document.getElementById('extraModal').classList.remove('hidden');
+    }
+
+    function closeExtraExpenseModal() {
+      document.getElementById('extraModal').classList.add('hidden');
+    }
+
+    function saveExtraExpense() {
+      const title = document.getElementById('extraTitle').value.trim();
+      const amount = parseInt(document.getElementById('extraAmount').value, 10) || 0;
+      const payer = parseInt(document.getElementById('extraPayer').value, 10) || 0;
+      if (!title || amount <= 0) {
+        alert('지출 내역과 금액을 입력해 주세요.');
+        return;
+      }
+      state.extraExpenses.push({ id: Date.now().toString(), title, amount, payer });
+      closeExtraExpenseModal();
+      saveState();
+    }
+
+    function deleteExtraExpense(id) {
+      state.extraExpenses = state.extraExpenses.filter(e => e.id !== id);
+      saveState();
+    }
+
+    function copyShoppingText() {
+      const categories = [...new Set(state.items.map(i => i.category))];
+      let lines = ['🛒 [3가족 펜션 장보기 리스트]', ''];
+      categories.forEach(cat => {
+        lines.push(`[${cat}]`);
+        state.items.filter(i => i.category === cat).forEach(i => {
+          const mark = i.checked ? '✅' : '⬜';
+          const fam = state.families[i.payer]?.name || '';
+          lines.push(`${mark} ${i.name}${i.note ? ' (' + i.note + ')' : ''} - ${Number(i.price).toLocaleString()}원 [${fam}]`);
+        });
+        lines.push('');
+      });
+      copyToClipboard(lines.join('\n'), '장보기 리스트가 복사되었습니다.');
+    }
+
+    function copySettlementText() {
+      const paidByFamily = [0, 0, 0];
+      state.items.forEach(i => paidByFamily[i.payer] += (Number(i.price) || 0));
+      state.extraExpenses.forEach(ex => paidByFamily[ex.payer] += (Number(ex.amount) || 0));
+      const grandTotal = paidByFamily.reduce((a, b) => a + b, 0);
+
+      let shares = [0, 0, 0];
+      if (state.splitMode === 'equal') {
+        const each = Math.round(grandTotal / 3);
+        shares = [each, each, grandTotal - each * 2];
+      } else {
+        const weights = state.families.map(f => f.adults + f.kids * state.childWeight);
+        const totalWeight = weights.reduce((a, b) => a + b, 0) || 1;
+        shares = weights.map(w => Math.round((grandTotal * w) / totalWeight));
+        shares[0] += grandTotal - shares.reduce((a, b) => a + b, 0);
+      }
+
+      const balances = state.families.map((f, idx) => ({
+        name: f.name,
+        paid: paidByFamily[idx],
+        share: shares[idx],
+        net: paidByFamily[idx] - shares[idx]
+      }));
+
+      let lines = [
+        '💰 [3가족 펜션 여행 정산 내역]',
+        `• 총 지출 합계: ${grandTotal.toLocaleString()}원`,
+        `• 정산 기준: ${state.splitMode === 'equal' ? '균등 1/3 N빵' : `인원 비례 (초등 ${state.childWeight}명 기준)`}`,
+        '',
+        '[가족별 결제 및 부담액]'
+      ];
+      balances.forEach(b => {
+        lines.push(`- ${b.name}: 결제 ${b.paid.toLocaleString()}원 / 부담 ${b.share.toLocaleString()}원`);
+      });
+
+      const debtors = balances.filter(b => b.net < -10).map(b => ({ name: b.name, amt: -b.net }));
+      const creditors = balances.filter(b => b.net > 10).map(b => ({ name: b.name, amt: b.net }));
+      lines.push('', '[최종 송금 안내]');
+      let d = 0, c = 0, hasTransfer = false;
+      while (d < debtors.length && c < creditors.length) {
+        const move = Math.min(debtors[d].amt, creditors[c].amt);
+        lines.push(`👉 ${debtors[d].name} → ${creditors[c].name} : ${Math.round(move).toLocaleString()}원`);
+        hasTransfer = true;
+        debtors[d].amt -= move;
+        creditors[c].amt -= move;
+        if (debtors[d].amt <= 10) d++;
+        if (creditors[c].amt <= 10) c++;
+      }
+      if (!hasTransfer) lines.push('주고받을 금액이 없습니다.');
+
+      copyToClipboard(lines.join('\n'), '정산 결과가 카톡용으로 복사되었습니다.');
+    }
+
+    function copyToClipboard(text, msg) {
+      navigator.clipboard.writeText(text).then(() => showToast(msg));
+    }
+
+    function resetAllData() {
+      if (confirm('공용 리스트의 체크 상태와 수정 내역을 모두 초기 상태로 되돌릴까요?')) {
+        state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+        saveState();
+        showToast('초기 리스트로 복원되었습니다.');
+      }
+    }
+
+    let toastTimer = null;
+    function showToast(msg, canUndo = false) {
+      const t = document.getElementById('toast');
+      document.getElementById('toastMsg').textContent = msg;
+      document.getElementById('toastUndoBtn').classList.toggle('hidden', !canUndo);
+      t.classList.remove('hidden');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(hideToast, 3500);
+    }
+
+    function hideToast() {
+      document.getElementById('toast').classList.add('hidden');
+    }
+
+    function escapeHtml(str) {
       return String(str)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+        .replace(/"/g, '&quot;');
     }
 
-    function getFamilyById(famId) {
-      return appState.families.find((f) => f.id === famId) || appState.families[0];
+    function renderAll() {
+      renderShoppingList();
+      renderSettlement();
     }
 
-    function getFamilyStyle(famId) {
-      return FAMILY_STYLES.find((s) => s.id === famId) || FAMILY_STYLES[0];
-    }
-
-    // 상태 저장 (LocalStorage + 연결 시 Supabase 푸시)
-    function persistState(pushToRemote = true) {
-      appState.updatedAt = Date.now();
-      try {
-        localStorage.setItem(STORAGE_STATE_KEY, JSON.stringify(appState));
-      } catch (err) {
-        console.error('로컬 저장 오류:', err);
-      }
-      if (pushToRemote && supabaseClient && syncConfig.roomCode && !isRemoteUpdating) {
-        pushStateToSupabase();
-      }
-    }
-
-    // 초기 상태 로드
-    function loadInitialState() {
-      try {
-        const raw = localStorage.getItem(STORAGE_STATE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed && Array.isArray(parsed.items) && Array.isArray(parsed.families)) {
-            appState = {
-              items: parsed.items,
-              families: parsed.families,
-              settlementSettings: {
-                checkedOnly: parsed.settlementSettings?.checkedOnly ?? true,
-                splitMode: parsed.settlementSettings?.splitMode || 'equal',
-                childWeight: parsed.settlementSettings?.childWeight ?? 0.5
-              },
-              updatedAt: parsed.updatedAt || Date.now()
-            };
-            return;
-          }
-        }
-      } catch (err) {
-        console.error('로컬 로드 오류:', err);
-      }
-
-      appState = {
-        items: JSON.parse(JSON.stringify(DEFAULT_ITEMS)),
-        families: JSON.parse(JSON.stringify(DEFAULT_FAMILIES)),
-        settlementSettings: {
-          checkedOnly: true,
-          splitMode: 'equal',
-          childWeight: 0.5
-        },
-        updatedAt: Date.now()
-      };
-      persistState(false);
-    }
-
-    // 토스트 알림
-    function showToast(msg, enableUndo = false) {
-      if (toastTimeout) clearTimeout(toastTimeout);
-      const box = document.getElementById('toastBox');
-      const msgEl = document.getElementById('toastMessage');
-      const undoBtn = document.getElementById('toastUndoBtn');
-
-      msgEl.textContent = msg;
-      if (enableUndo) {
-        undoBtn.classList.remove('hidden');
-      } else {
-        undoBtn.classList.add('hidden');
-      }
-      box.classList.remove('hidden');
-      box.classList.add('flex');
-
-      toastTimeout = setTimeout(() => {
-        box.classList.add('hidden');
-        box.classList.remove('flex');
-      }, enableUndo ? 4200 : 2500);
-    }
-
-    // 클립보드 복사
-    function copyTextToClipboard(text, successMessage) {
-      const helper = document.getElementById('clipboardHelper');
-      helper.value = text;
-      helper.select();
-      helper.setSelectionRange(0, 99999);
-      try {
-        const ok = document.execCommand('copy');
-        showToast(ok ? successMessage : '복사에 실패했습니다. 다시 시도해 주세요.');
-      } catch (err) {
-        console.error('클립보드 복사 오류:', err);
-        showToast('복사 중 오류가 발생했습니다.');
-      }
-    }
-
-    // =========================================================
-    // 탭 전환 & 헤더 렌더링
-    // =========================================================
-    function switchTab(tabName) {
-      activeTab = tabName;
-      const viewShopping = document.getElementById('viewShopping');
-      const viewSettlement = document.getElementById('viewSettlement');
-      const btnShopping = document.getElementById('tabBtnShopping');
-      const btnSettlement = document.getElementById('tabBtnSettlement');
-
-      if (tabName === 'shopping') {
-        viewShopping.classList.remove('hidden');
-        viewSettlement.classList.add('hidden');
-        btnShopping.className = 'main-tab-btn py-2.5 px-3 rounded-xl text-sm font-extrabold bg-white text-slate-900 shadow-xs flex items-center justify-center gap-1.5 transition';
-        btnSettlement.className = 'main-tab-btn py-2.5 px-3 rounded-xl text-sm font-bold text-slate-600 hover:text-slate-900 flex items-center justify-center gap-1.5 transition';
-      } else {
-        viewShopping.classList.add('hidden');
-        viewSettlement.classList.remove('hidden');
-        btnSettlement.className = 'main-tab-btn py-2.5 px-3 rounded-xl text-sm font-extrabold bg-white text-slate-900 shadow-xs flex items-center justify-center gap-1.5 transition';
-        btnShopping.className = 'main-tab-btn py-2.5 px-3 rounded-xl text-sm font-bold text-slate-600 hover:text-slate-900 flex items-center justify-center gap-1.5 transition';
-        renderSettlementView();
-      }
-    }
-
-    function updateHeaderMeta() {
-      const totalAdults = appState.families.reduce((s, f) => s + (Number(f.adults) || 0), 0);
-      const totalKids = appState.families.reduce((s, f) => s + (Number(f.kids) || 0), 0);
-      const totalPeople = totalAdults + totalKids;
-
-      document.getElementById('headerHeadcountBadge').textContent =
-        `어른 ${totalAdults} · 초등 ${totalKids} (총 ${totalPeople}명)`;
-
-      const checkedCount = appState.items.filter((i) => i.checked).length;
-      document.getElementById('tabShoppingBadge').textContent = `${checkedCount}/${appState.items.length}`;
-    }
-
-    // =========================================================
-    // TAB 1: 장보기 체크리스트 렌더링 & 인터랙션
-    // =========================================================
-    function renderShoppingSummary() {
-      const total = appState.items.length;
-      const checkedItems = appState.items.filter((i) => i.checked);
-      const checkedCount = checkedItems.length;
-      const remainingCount = total - checkedCount;
-      const pct = total === 0 ? 0 : Math.round((checkedCount / total) * 100);
-
-      const totalBudget = appState.items.reduce((s, i) => s + (Number(i.price) || 0), 0);
-      const checkedAmount = checkedItems.reduce((s, i) => s + (Number(i.price) || 0), 0);
-
-      document.getElementById('checkedCountText').textContent = checkedCount;
-      document.getElementById('totalCountText').textContent = total;
-      document.getElementById('progressPercentText').textContent = `${pct}%`;
-      document.getElementById('checkedAmountText').textContent = formatKRW(checkedAmount);
-      document.getElementById('totalAmountText').textContent = formatKRW(totalBudget);
-      document.getElementById('progressBarFill').style.width = `${pct}%`;
-
-      document.getElementById('countAllPill').textContent = total;
-      document.getElementById('countRemainingPill').textContent = remainingCount;
-      document.getElementById('countCheckedPill').textContent = checkedCount;
-    }
-
-    function renderCategoryChips() {
-      const bar = document.getElementById('categoryFilterBar');
-      let html = `
-        <button
-          type="button"
-          data-cat="all"
-          class="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition ${
-            categoryFilter === 'all'
-              ? 'bg-slate-800 text-white shadow-xs'
-              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-          }"
-        >
-          전체 카테고리
-        </button>
-      `;
-
-      CATEGORIES.forEach((cat) => {
-        const count = appState.items.filter((i) => i.category === cat.id).length;
-        if (count === 0) return;
-        const active = categoryFilter === cat.id;
-        html += `
-          <button
-            type="button"
-            data-cat="${escapeHTML(cat.id)}"
-            class="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition ${
-              active
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-            }"
-          >
-            ${cat.icon} ${escapeHTML(cat.id)}
-          </button>
-        `;
-      });
-
-      bar.innerHTML = html;
-      bar.querySelectorAll('button[data-cat]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          categoryFilter = btn.getAttribute('data-cat');
-          renderShoppingView();
-        });
-      });
-    }
-
-    function renderChecklistItems() {
-      const container = document.getElementById('checklistContainer');
-      const emptyEl = document.getElementById('emptyShoppingState');
-
-      const filtered = appState.items.filter((item) => {
-        if (statusFilter === 'remaining' && item.checked) return false;
-        if (statusFilter === 'checked' && !item.checked) return false;
-        if (categoryFilter !== 'all' && item.category !== categoryFilter) return false;
-        return true;
-      });
-
-      if (filtered.length === 0) {
-        container.innerHTML = '';
-        emptyEl.classList.remove('hidden');
-        return;
-      }
-      emptyEl.classList.add('hidden');
-
-      let html = '';
-      CATEGORIES.forEach((cat) => {
-        const catItems = filtered.filter((i) => i.category === cat.id);
-        if (catItems.length === 0) return;
-
-        const allInCat = appState.items.filter((i) => i.category === cat.id);
-        const doneInCat = allInCat.filter((i) => i.checked).length;
-        const catSum = catItems.reduce((s, i) => s + (Number(i.price) || 0), 0);
-
-        html += `
-          <div class="bg-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden">
-            <div class="px-4 py-2.5 bg-slate-50/90 border-b border-slate-100 flex items-center justify-between gap-2">
-              <div class="flex items-center gap-2">
-                <span class="text-base">${cat.icon}</span>
-                <h2 class="text-sm font-extrabold text-slate-800">${escapeHTML(cat.id)}</h2>
-                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${cat.badge}">
-                  ${doneInCat}/${allInCat.length}
-                </span>
-              </div>
-              <span class="text-xs font-bold text-slate-400">${catSum > 0 ? formatKRW(catSum) : ''}</span>
-            </div>
-
-            <ul class="divide-y divide-slate-100">
-              ${catItems
-                .map((item) => {
-                  const fam = getFamilyById(item.payerId);
-                  const famStyle = getFamilyStyle(fam.id);
-                  const shortFamLabel = fam.name.split('(')[0].trim();
-                  const priceLabel = Number(item.price) > 0 ? formatKRW(item.price) : '0원';
-
-                  return `
-                    <li
-                      data-id="${escapeHTML(item.id)}"
-                      class="shopping-row flex items-center justify-between gap-2 px-3.5 py-3 cursor-pointer transition-smooth ${
-                        item.checked ? 'bg-slate-50/80' : 'bg-white hover:bg-emerald-50/25 active:bg-slate-50'
-                      }"
-                    >
-                      <!-- 좌측 체크박스 + 품목 정보 -->
-                      <div class="flex items-start gap-3 flex-1 min-w-0">
-                        <div class="pt-0.5 shrink-0">
-                          <div
-                            class="w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-smooth ${
-                              item.checked
-                                ? 'bg-emerald-500 border-emerald-500 text-white'
-                                : 'border-slate-300 bg-white'
-                            }"
-                          >
-                            ${
-                              item.checked
-                                ? `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
-                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                   </svg>`
-                                : ''
-                            }
-                          </div>
-                        </div>
-
-                        <div class="flex-1 min-w-0">
-                          <p
-                            class="text-[14px] sm:text-[15px] font-bold leading-snug break-keep transition-smooth ${
-                              item.checked ? 'line-through text-slate-400' : 'text-slate-900'
-                            }"
-                          >
-                            ${escapeHTML(item.name)}
-                          </p>
-                          <div class="flex flex-wrap items-center gap-1.5 mt-1">
-                            <span class="text-xs font-extrabold ${item.checked ? 'text-slate-400' : 'text-emerald-700'}">
-                              ${priceLabel}
-                            </span>
-                            ${
-                              item.memo
-                                ? `<span class="text-[11px] font-medium ${item.checked ? 'text-slate-400' : 'text-slate-500'}">· ${escapeHTML(item.memo)}</span>`
-                                : ''
-                            }
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- 우측 결제자 순환 배지 + 수정/삭제 -->
-                      <div class="flex items-center gap-1 shrink-0" onclick="event.stopPropagation()">
-                        <button
-                          type="button"
-                          data-action="cycle-payer"
-                          data-id="${escapeHTML(item.id)}"
-                          class="px-2 py-1 rounded-lg border text-[11px] font-extrabold active:scale-95 transition ${famStyle.pill}"
-                          title="터치하여 결제한 가족 변경"
-                        >
-                          ${escapeHTML(shortFamLabel)}
-                        </button>
-
-                        <button
-                          type="button"
-                          data-action="edit"
-                          data-id="${escapeHTML(item.id)}"
-                          class="p-2 rounded-xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 active:scale-90 transition"
-                          aria-label="수정"
-                        >
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                          </svg>
-                        </button>
-
-                        <button
-                          type="button"
-                          data-action="delete"
-                          data-id="${escapeHTML(item.id)}"
-                          class="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 active:scale-90 transition"
-                          aria-label="삭제"
-                        >
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </li>
-                  `;
-                })
-                .join('')}
-            </ul>
-          </div>
-        `;
-      });
-
-      container.innerHTML = html;
-
-      // 이벤트 바인딩
-      container.querySelectorAll('.shopping-row').forEach((row) => {
-        row.addEventListener('click', () => {
-          const id = row.getAttribute('data-id');
-          toggleItemCheck(id);
-        });
-      });
-
-      container.querySelectorAll('button[data-action="cycle-payer"]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          cycleItemPayer(btn.getAttribute('data-id'));
-        });
-      });
-
-      container.querySelectorAll('button[data-action="edit"]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          openItemModalForEdit(btn.getAttribute('data-id'));
-        });
-      });
-
-      container.querySelectorAll('button[data-action="delete"]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          deleteItem(btn.getAttribute('data-id'));
-        });
-      });
-    }
-
-    function renderShoppingView() {
-      updateHeaderMeta();
-      renderShoppingSummary();
-      renderCategoryChips();
-      renderChecklistItems();
-    }
-
-    function toggleItemCheck(id) {
-      const idx = appState.items.findIndex((i) => i.id === id);
-      if (idx === -1) return;
-      appState.items[idx].checked = !appState.items[idx].checked;
-      persistState(true);
-      renderShoppingView();
-    }
-
-    function cycleItemPayer(id) {
-      const idx = appState.items.findIndex((i) => i.id === id);
-      if (idx === -1) return;
-      const famIds = appState.families.map((f) => f.id);
-      const currIdx = famIds.indexOf(appState.items[idx].payerId);
-      const nextIdx = (currIdx + 1) % famIds.length;
-      appState.items[idx].payerId = famIds[nextIdx];
-      persistState(true);
-      renderShoppingView();
-      const nextFam = getFamilyById(famIds[nextIdx]);
-      showToast(`결제자 변경: ${nextFam.name}`);
-    }
-
-    function deleteItem(id) {
-      const idx = appState.items.findIndex((i) => i.id === id);
-      if (idx === -1) return;
-      lastDeletedItem = { ...appState.items[idx] };
-      lastDeletedIndex = idx;
-      appState.items.splice(idx, 1);
-      persistState(true);
-      renderShoppingView();
-      if (activeTab === 'settlement') renderSettlementView();
-      showToast(`'${lastDeletedItem.name}' 삭제됨`, true);
-    }
-
-    function undoDeleteItem() {
-      if (!lastDeletedItem) return;
-      const pos = Math.min(Math.max(lastDeletedIndex, 0), appState.items.length);
-      appState.items.splice(pos, 0, lastDeletedItem);
-      lastDeletedItem = null;
-      lastDeletedIndex = -1;
-      persistState(true);
-      renderShoppingView();
-      if (activeTab === 'settlement') renderSettlementView();
-      const box = document.getElementById('toastBox');
-      box.classList.add('hidden');
-      box.classList.remove('flex');
-    }
-
-    // =========================================================
-    // TAB 2: 3가족 자동 N빵 정산 로직 & 렌더링
-    // =========================================================
-    function calculateSettlement() {
-      const { checkedOnly, splitMode, childWeight } = appState.settlementSettings;
-      const targetItems = checkedOnly
-        ? appState.items.filter((i) => i.checked)
-        : appState.items;
-
-      const totalSpend = targetItems.reduce((s, i) => s + (Number(i.price) || 0), 0);
-
-      // 가족별 실제 지출액 합산
-      const paidMap = {};
-      appState.families.forEach((f) => {
-        paidMap[f.id] = 0;
-      });
-      targetItems.forEach((item) => {
-        const pid = paidMap.hasOwnProperty(item.payerId) ? item.payerId : appState.families[0].id;
-        paidMap[pid] += Number(item.price) || 0;
-      });
-
-      // 가족별 분담 가중치 계산
-      const weights = appState.families.map((f) => {
-        if (splitMode === 'equal') return 1;
-        const adults = Math.max(0, Number(f.adults) || 0);
-        const kids = Math.max(0, Number(f.kids) || 0);
-        const w = adults * 1 + kids * Number(childWeight);
-        return w > 0 ? w : 0;
-      });
-
-      const sumWeight = weights.reduce((s, w) => s + w, 0);
-
-      const results = appState.families.map((f, idx) => {
-        const paid = paidMap[f.id] || 0;
-        let fairShare = 0;
-        if (totalSpend > 0 && sumWeight > 0) {
-          fairShare = Math.round((totalSpend * weights[idx]) / sumWeight);
-        }
-        const net = paid - fairShare; // +면 받을 돈, -면 보낼 돈
-        return {
-          ...f,
-          paid,
-          fairShare,
-          net,
-          weight: weights[idx]
-        };
-      });
-
-      // 최소 이체 경로 계산 (Greedy Debtor -> Creditor)
-      const debtors = results
-        .filter((r) => r.net < -10)
-        .map((r) => ({ id: r.id, name: r.name, amount: Math.abs(r.net) }))
-        .sort((a, b) => b.amount - a.amount);
-
-      const creditors = results
-        .filter((r) => r.net > 10)
-        .map((r) => ({ id: r.id, name: r.name, amount: r.net }))
-        .sort((a, b) => b.amount - a.amount);
-
-      const transfers = [];
-      let dIdx = 0;
-      let cIdx = 0;
-      while (dIdx < debtors.length && cIdx < creditors.length) {
-        const debtor = debtors[dIdx];
-        const creditor = creditors[cIdx];
-        const transferAmount = Math.min(debtor.amount, creditor.amount);
-
-        if (transferAmount >= 10) {
-          transfers.push({
-            from: debtor.name,
-            to: creditor.name,
-            amount: Math.round(transferAmount / 10) * 10 // 10원 단위 반올림
-          });
-        }
-
-        debtor.amount -= transferAmount;
-        creditor.amount -= transferAmount;
-
-        if (debtor.amount <= 10) dIdx++;
-        if (creditor.amount <= 10) cIdx++;
-      }
-
-      return {
-        totalSpend,
-        targetCount: targetItems.length,
-        results,
-        transfers
-      };
-    }
-
-    function renderSettlementView() {
-      updateHeaderMeta();
-      const { checkedOnly, splitMode, childWeight } = appState.settlementSettings;
-
-      // 토글/버튼 UI 동기화
-      document.getElementById('settleCheckedOnlyToggle').checked = checkedOnly;
-
-      document.querySelectorAll('.split-mode-btn').forEach((btn) => {
-        const mode = btn.getAttribute('data-split-mode');
-        if (mode === splitMode) {
-          btn.className = 'split-mode-btn py-2.5 px-3 rounded-xl border-2 border-emerald-600 bg-emerald-50/70 text-emerald-900 text-xs font-extrabold text-left transition';
-        } else {
-          btn.className = 'split-mode-btn py-2.5 px-3 rounded-xl border-2 border-slate-200 bg-white text-slate-700 text-xs font-extrabold text-left hover:border-slate-300 transition';
-        }
-      });
-
-      const childWeightBox = document.getElementById('childWeightBox');
-      if (splitMode === 'headcount') {
-        childWeightBox.classList.remove('hidden');
-      } else {
-        childWeightBox.classList.add('hidden');
-      }
-
-      document.querySelectorAll('.child-weight-btn').forEach((btn) => {
-        const w = Number(btn.getAttribute('data-child-weight'));
-        if (w === Number(childWeight)) {
-          btn.className = 'child-weight-btn px-2.5 py-1 rounded-md text-xs font-extrabold bg-amber-500 text-white transition';
-        } else {
-          btn.className = 'child-weight-btn px-2.5 py-1 rounded-md text-xs font-bold text-slate-600 hover:text-slate-900 transition';
-        }
-      });
-
-      // 가족 구성 편집 행 렌더링
-      const totalAdults = appState.families.reduce((s, f) => s + (Number(f.adults) || 0), 0);
-      const totalKids = appState.families.reduce((s, f) => s + (Number(f.kids) || 0), 0);
-      document.getElementById('settlementHeadcountSummary').textContent =
-        `어른 ${totalAdults}명 · 초등 ${totalKids}명 (총 ${totalAdults + totalKids}명)`;
-
-      const famConfigEl = document.getElementById('familyConfigContainer');
-      famConfigEl.innerHTML = appState.families
-        .map((fam) => {
-          const style = getFamilyStyle(fam.id);
-          return `
-            <div class="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200/80">
-              <div class="flex items-center gap-2 flex-1 min-w-[140px]">
-                <span class="w-2.5 h-2.5 rounded-full shrink-0 ${style.dot}"></span>
-                <input
-                  type="text"
-                  data-fam-field="name"
-                  data-fam-id="${escapeHTML(fam.id)}"
-                  value="${escapeHTML(fam.name)}"
-                  class="fam-input w-full bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-extrabold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-              <div class="flex items-center gap-1.5 shrink-0 text-xs">
-                <label class="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-slate-200">
-                  <span class="text-slate-500 font-semibold">어른</span>
-                  <input
-                    type="number"
-                    min="0"
-                    max="20"
-                    inputmode="numeric"
-                    data-fam-field="adults"
-                    data-fam-id="${escapeHTML(fam.id)}"
-                    value="${fam.adults}"
-                    class="fam-input w-8 text-center font-extrabold text-slate-900 focus:outline-none"
-                  />
-                </label>
-                <label class="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-slate-200">
-                  <span class="text-slate-500 font-semibold">초등</span>
-                  <input
-                    type="number"
-                    min="0"
-                    max="20"
-                    inputmode="numeric"
-                    data-fam-field="kids"
-                    data-fam-id="${escapeHTML(fam.id)}"
-                    value="${fam.kids}"
-                    class="fam-input w-8 text-center font-extrabold text-slate-900 focus:outline-none"
-                  />
-                </label>
-              </div>
-            </div>
-          `;
-        })
-        .join('');
-
-      famConfigEl.querySelectorAll('.fam-input').forEach((input) => {
-        input.addEventListener('change', (e) => {
-          const famId = e.target.getAttribute('data-fam-id');
-          const field = e.target.getAttribute('data-fam-field');
-          const famIdx = appState.families.findIndex((f) => f.id === famId);
-          if (famIdx === -1) return;
-
-          if (field === 'name') {
-            appState.families[famIdx].name = e.target.value.trim() || `가족 ${famIdx + 1}`;
-          } else {
-            appState.families[famIdx][field] = Math.max(0, parseInt(e.target.value, 10) || 0);
-          }
-          persistState(true);
-          renderSettlementView();
-        });
-      });
-
-      // 정산 계산 실행
-      const { totalSpend, targetCount, results, transfers } = calculateSettlement();
-      document.getElementById('settleTotalSpend').textContent = `${formatKRW(totalSpend)} (${targetCount}건)`;
-
-      // 최소 이체 경로 렌더링
-      const transferEl = document.getElementById('transferListContainer');
-      if (totalSpend === 0) {
-        transferEl.innerHTML = `
-          <div class="p-3 rounded-xl bg-slate-800/70 text-slate-300 text-xs">
-            아직 정산할 지출 내역이 없습니다. 장보기 탭에서 구매한 품목을 체크해 주세요.
-          </div>
-        `;
-      } else if (transfers.length === 0) {
-        transferEl.innerHTML = `
-          <div class="p-3 rounded-xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-200 text-xs font-bold">
-            ✨ 세 가족의 지출 금액이 정확히 일치하여 추가로 보낼 돈이 없습니다!
-          </div>
-        `;
-      } else {
-        transferEl.innerHTML = transfers
-          .map(
-            (t) => `
-              <div class="flex items-center justify-between gap-2 p-3 rounded-xl bg-white/10 border border-white/10">
-                <div class="flex items-center gap-1.5 text-xs sm:text-sm font-bold flex-wrap">
-                  <span class="text-rose-300">${escapeHTML(t.from)}</span>
-                  <span class="text-slate-400">→</span>
-                  <span class="text-sky-300">${escapeHTML(t.to)}</span>
-                </div>
-                <span class="text-sm sm:text-base font-extrabold text-amber-300 shrink-0">
-                  ${formatKRW(t.amount)}
-                </span>
-              </div>
-            `
-          )
-          .join('');
-      }
-
-      // 가족별 상세 카드 렌더링
-      const breakdownEl = document.getElementById('familyBreakdownContainer');
-      breakdownEl.innerHTML = results
-        .map((r) => {
-          const style = getFamilyStyle(r.id);
-          let badgeHTML = `<span class="px-2.5 py-1 rounded-lg text-xs font-extrabold bg-slate-100 text-slate-600">정산 완료 (0원)</span>`;
-          if (r.net > 10) {
-            badgeHTML = `<span class="px-2.5 py-1 rounded-lg text-xs font-extrabold bg-blue-50 text-blue-700 border border-blue-200">+${formatKRW(r.net)} 받을 돈</span>`;
-          } else if (r.net < -10) {
-            badgeHTML = `<span class="px-2.5 py-1 rounded-lg text-xs font-extrabold bg-rose-50 text-rose-700 border border-rose-200">-${formatKRW(Math.abs(r.net))} 보낼 돈</span>`;
-          }
-
-          return `
-            <div class="bg-white rounded-2xl border border-slate-200/90 p-3.5 shadow-xs">
-              <div class="flex items-center justify-between gap-2 mb-2.5">
-                <div class="flex items-center gap-2">
-                  <span class="w-2.5 h-2.5 rounded-full ${style.dot}"></span>
-                  <span class="text-sm font-extrabold text-slate-900">${escapeHTML(r.name)}</span>
-                  <span class="text-[11px] font-semibold text-slate-400">어른 ${r.adults} · 초등 ${r.kids}</span>
-                </div>
-                ${badgeHTML}
-              </div>
-
-              <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 text-xs">
-                <div class="bg-slate-50 px-3 py-2 rounded-xl">
-                  <span class="text-slate-500 block text-[11px]">실제 결제한 금액</span>
-                  <span class="font-extrabold text-slate-900 text-sm mt-0.5 block">${formatKRW(r.paid)}</span>
-                </div>
-                <div class="bg-slate-50 px-3 py-2 rounded-xl">
-                  <span class="text-slate-500 block text-[11px]">분담해야 할 금액</span>
-                  <span class="font-extrabold text-slate-900 text-sm mt-0.5 block">${formatKRW(r.fairShare)}</span>
-                </div>
-              </div>
-            </div>
-          `;
-        })
-        .join('');
-    }
-
-    // =========================================================
-    // 품목 추가 / 수정 모달 제어
-    // =========================================================
-    function populateItemModalSelects() {
-      const catSel = document.getElementById('itemCategoryInput');
-      catSel.innerHTML = CATEGORIES.map(
-        (c) => `<option value="${escapeHTML(c.id)}">${c.icon} ${escapeHTML(c.id)}</option>`
-      ).join('');
-
-      const payerSel = document.getElementById('itemPayerInput');
-      payerSel.innerHTML = appState.families
-        .map((f) => `<option value="${escapeHTML(f.id)}">${escapeHTML(f.name)}</option>`)
-        .join('');
-    }
-
-    function openItemModalForAdd() {
-      populateItemModalSelects();
-      document.getElementById('itemModalTitle').textContent = '새 품목 / 영수증 추가';
-      document.getElementById('editItemId').value = '';
-      document.getElementById('itemCategoryInput').value =
-        categoryFilter !== 'all' ? categoryFilter : CATEGORIES[0].id;
-      document.getElementById('itemNameInput').value = '';
-      document.getElementById('itemMemoInput').value = '';
-      document.getElementById('itemPriceInput').value = '';
-      document.getElementById('itemPayerInput').value = appState.families[0].id;
-      document.getElementById('itemCheckedInput').checked = activeTab === 'settlement';
-
-      const modal = document.getElementById('itemModal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-      setTimeout(() => document.getElementById('itemNameInput').focus(), 80);
-    }
-
-    function openItemModalForEdit(id) {
-      const item = appState.items.find((i) => i.id === id);
-      if (!item) return;
-      populateItemModalSelects();
-      document.getElementById('itemModalTitle').textContent = '품목 / 금액 수정';
-      document.getElementById('editItemId').value = item.id;
-      document.getElementById('itemCategoryInput').value = item.category;
-      document.getElementById('itemNameInput').value = item.name;
-      document.getElementById('itemMemoInput').value = item.memo || '';
-      document.getElementById('itemPriceInput').value = item.price || '';
-      document.getElementById('itemPayerInput').value = item.payerId || appState.families[0].id;
-      document.getElementById('itemCheckedInput').checked = !!item.checked;
-
-      const modal = document.getElementById('itemModal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
-    }
-
-    function closeItemModal() {
-      const modal = document.getElementById('itemModal');
-      modal.classList.add('hidden');
-      modal.classList.remove('flex');
-    }
-
-    // =========================================================
-    // 선택적 Supabase 실시간 방 공유 연동
-    // =========================================================
-    function loadSyncConfig() {
-      try {
-        const raw = localStorage.getItem(STORAGE_SYNC_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed && parsed.url && parsed.key && parsed.roomCode) {
-            syncConfig = parsed;
-            connectSupabaseRoom(false);
-          }
-        }
-      } catch (e) {
-        console.error('Sync 설정 로드 오류:', e);
-      }
-    }
-
-    function updateSyncBadgeUI(connected) {
-      const badge = document.getElementById('syncStatusBadge');
-      const banner = document.getElementById('syncModalStatusBanner');
-      const disconnectBtn = document.getElementById('disconnectSyncBtn');
-
-      if (connected) {
-        badge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-100 text-indigo-800';
-        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse"></span>방 공유중 (${escapeHTML(syncConfig.roomCode)})`;
-        banner.className = 'p-3 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs font-semibold';
-        banner.innerHTML = `✅ <strong>${escapeHTML(syncConfig.roomCode)}</strong> 방에 실시간 연결되었습니다. 세 가족의 체크와 정산이 자동 동기화됩니다.`;
-        disconnectBtn.classList.remove('hidden');
-      } else {
-        badge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600';
-        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>기기 저장 모드`;
-        banner.className = 'p-3 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold';
-        banner.innerHTML = `현재 <strong>이 기기 단독 저장 모드</strong>로 작동 중입니다.`;
-        disconnectBtn.classList.add('hidden');
-      }
-    }
-
-    async function pushStateToSupabase() {
-      if (!supabaseClient || !syncConfig.roomCode) return;
-      try {
-        await supabaseClient
-          .from('pension_rooms')
-          .upsert({
-            room_code: syncConfig.roomCode,
-            data: appState,
-            updated_at: new Date().toISOString()
-          });
-      } catch (err) {
-        console.error('Supabase 동기화 전송 실패:', err);
-      }
-    }
-
-    async function pullStateFromSupabase() {
-      if (!supabaseClient || !syncConfig.roomCode) return;
-      try {
-        const { data, error } = await supabaseClient
-          .from('pension_rooms')
-          .select('data')
-          .eq('room_code', syncConfig.roomCode)
-          .maybeSingle();
-
-        if (error) throw error;
-
-        if (data && data.data && data.data.updatedAt > appState.updatedAt) {
-          isRemoteUpdating = true;
-          appState = data.data;
-          persistState(false);
-          renderShoppingView();
-          if (activeTab === 'settlement') renderSettlementView();
-          isRemoteUpdating = false;
-        } else if (!data) {
-          // 방이 아직 없으면 현재 로컬 데이터 업로드
-          await pushStateToSupabase();
-        }
-      } catch (err) {
-        console.error('Supabase 데이터 수신 실패:', err);
-      }
-    }
-
-    async function connectSupabaseRoom(showFeedback = true) {
-      if (!window.supabase || !syncConfig.url || !syncConfig.key || !syncConfig.roomCode) {
-        updateSyncBadgeUI(false);
-        return;
-      }
-
-      try {
-        if (realtimeChannel) {
-          supabaseClient.removeChannel(realtimeChannel);
-          realtimeChannel = null;
-        }
-        if (pollTimer) {
-          clearInterval(pollTimer);
-          pollTimer = null;
-        }
-
-        supabaseClient = window.supabase.createClient(syncConfig.url, syncConfig.key);
-        await pullStateFromSupabase();
-
-        // Realtime 구독 + 6초 폴링 백업
-        realtimeChannel = supabaseClient
-          .channel('room_' + syncConfig.roomCode)
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'pension_rooms',
-              filter: `room_code=eq.${syncConfig.roomCode}`
-            },
-            (payload) => {
-              const remoteData = payload.new?.data;
-              if (remoteData && remoteData.updatedAt > appState.updatedAt) {
-                isRemoteUpdating = true;
-                appState = remoteData;
-                persistState(false);
-                renderShoppingView();
-                if (activeTab === 'settlement') renderSettlementView();
-                isRemoteUpdating = false;
-              }
-            }
-          )
-          .subscribe();
-
-        pollTimer = setInterval(pullStateFromSupabase, 6000);
-        updateSyncBadgeUI(true);
-        if (showFeedback) {
-          showToast(`'${syncConfig.roomCode}' 공유 방에 연결되었습니다!`);
-        }
-      } catch (err) {
-        console.error('Supabase 연결 오류:', err);
-        updateSyncBadgeUI(false);
-        if (showFeedback) {
-          showToast('연결에 실패했습니다. URL과 Key, 테이블 생성 여부를 확인해 주세요.');
-        }
-      }
-    }
-
-    // =========================================================
-    // 이벤트 리스너 초기화
-    // =========================================================
-    function initEvents() {
-      // 메인 탭 전환
-      document.querySelectorAll('.main-tab-btn').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          switchTab(btn.getAttribute('data-tab'));
-        });
-      });
-
-      // 상태 필터 필
-      document.querySelectorAll('.status-pill').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          statusFilter = btn.getAttribute('data-status');
-          document.querySelectorAll('.status-pill').forEach((b) => {
-            b.className = 'status-pill py-1.5 px-2 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 transition';
-          });
-          btn.className = 'status-pill py-1.5 px-2 rounded-lg text-xs font-extrabold bg-white text-slate-900 shadow-xs transition';
-          renderChecklistItems();
-        });
-      });
-
-      // 장보기 리스트 카톡 복사
-      document.getElementById('copyShoppingListBtn').addEventListener('click', () => {
-        const total = appState.items.length;
-        const done = appState.items.filter((i) => i.checked).length;
-        const totalSum = appState.items.reduce((s, i) => s + (Number(i.price) || 0), 0);
-
-        const lines = [
-          `🛒 3가족 펜션 장보기 현황 (${done}/${total}개 완료)`,
-          `💰 전체 예상 예산: ${formatKRW(totalSum)}`,
-          ''
-        ];
-
-        CATEGORIES.forEach((cat) => {
-          const catItems = appState.items.filter((i) => i.category === cat.id);
-          if (catItems.length === 0) return;
-          lines.push(`[${cat.id}]`);
-          catItems.forEach((item) => {
-            const checkMark = item.checked ? '[v]' : '[ ]';
-            const famShort = getFamilyById(item.payerId).name.split('(')[0].trim();
-            const memoStr = item.memo ? ` (${item.memo})` : '';
-            lines.push(`${checkMark} ${item.name}${memoStr} - ${formatKRW(item.price)} [${famShort}]`);
-          });
-          lines.push('');
-        });
-
-        copyTextToClipboard(lines.join('\n').trim(), '카톡 공유용 장보기 리스트가 복사되었습니다!');
-      });
-
-      // 정산 내역 카톡 복사
-      document.getElementById('copySettlementBtn').addEventListener('click', () => {
-        const { totalSpend, targetCount, results, transfers } = calculateSettlement();
-        const modeLabel =
-          appState.settlementSettings.splitMode === 'equal'
-            ? '가족 균등 1/3 N빵'
-            : `인원수 비례 정산 (초등 ${appState.settlementSettings.childWeight}명 기준)`;
-
-        const lines = [
-          `💰 3가족 펜션 여행 N빵 정산 결과`,
-          `• 정산 기준: ${modeLabel} (${targetCount}건)`,
-          `• 총 지출 금액: ${formatKRW(totalSpend)}`,
-          '',
-          `[가족별 결제 및 분담 내역]`
-        ];
-
-        results.forEach((r) => {
-          const diffStr =
-            r.net > 10
-              ? `+${formatKRW(r.net)} 받음`
-              : r.net < -10
-              ? `-${formatKRW(Math.abs(r.net))} 보냄`
-              : '0원';
-          lines.push(`- ${r.name}: 결제 ${formatKRW(r.paid)} / 분담 ${formatKRW(r.fairShare)} (${diffStr})`);
-        });
-
-        lines.push('', `[💸 최종 송금 안내]`);
-        if (transfers.length === 0) {
-          lines.push('추가 송금할 금액이 없습니다.');
-        } else {
-          transfers.forEach((t) => {
-            lines.push(`👉 ${t.from} → ${t.to} : ${formatKRW(t.amount)}`);
-          });
-        }
-
-        copyTextToClipboard(lines.join('\n'), '카톡 정산 내역이 복사되었습니다!');
-      });
-
-      // 정산 설정 컨트롤
-      document.getElementById('settleCheckedOnlyToggle').addEventListener('change', (e) => {
-        appState.settlementSettings.checkedOnly = e.target.checked;
-        persistState(true);
-        renderSettlementView();
-      });
-
-      document.querySelectorAll('.split-mode-btn').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          appState.settlementSettings.splitMode = btn.getAttribute('data-split-mode');
-          persistState(true);
-          renderSettlementView();
-        });
-      });
-
-      document.querySelectorAll('.child-weight-btn').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          appState.settlementSettings.childWeight = Number(btn.getAttribute('data-child-weight'));
-          persistState(true);
-          renderSettlementView();
-        });
-      });
-
-      // 품목 추가/수정 모달
-      document.getElementById('openAddItemModalBtn').addEventListener('click', openItemModalForAdd);
-      document.getElementById('closeItemModalBtn').addEventListener('click', closeItemModal);
-      document.getElementById('cancelItemModalBtn').addEventListener('click', closeItemModal);
-      document.getElementById('itemModal').addEventListener('click', (e) => {
-        if (e.target.id === 'itemModal') closeItemModal();
-      });
-
-      document.getElementById('itemForm').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const name = document.getElementById('itemNameInput').value.trim();
-        if (!name) return;
-
-        const editId = document.getElementById('editItemId').value;
-        const category = document.getElementById('itemCategoryInput').value;
-        const memo = document.getElementById('itemMemoInput').value.trim();
-        const price = Math.max(0, parseInt(document.getElementById('itemPriceInput').value, 10) || 0);
-        const payerId = document.getElementById('itemPayerInput').value;
-        const checked = document.getElementById('itemCheckedInput').checked;
-
-        if (editId) {
-          const idx = appState.items.findIndex((i) => i.id === editId);
-          if (idx !== -1) {
-            appState.items[idx] = { ...appState.items[idx], category, name, memo, price, payerId, checked };
-            showToast('항목이 수정되었습니다.');
-          }
-        } else {
-          appState.items.push({
-            id: 'item-' + Date.now(),
-            category,
-            name,
-            memo,
-            price,
-            payerId,
-            checked
-          });
-          showToast('새 항목이 추가되었습니다.');
-        }
-
-        persistState(true);
-        closeItemModal();
-        renderShoppingView();
-        if (activeTab === 'settlement') renderSettlementView();
-      });
-
-      // 실시간 공유 모달
-      document.getElementById('openSyncModalBtn').addEventListener('click', () => {
-        document.getElementById('supabaseUrlInput').value = syncConfig.url || '';
-        document.getElementById('supabaseKeyInput').value = syncConfig.key || '';
-        document.getElementById('roomCodeInput').value = syncConfig.roomCode || '';
-        const modal = document.getElementById('syncModal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-      });
-
-      document.getElementById('closeSyncModalBtn').addEventListener('click', () => {
-        const modal = document.getElementById('syncModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-      });
-
-      document.getElementById('syncModal').addEventListener('click', (e) => {
-        if (e.target.id === 'syncModal') {
-          e.target.classList.add('hidden');
-          e.target.classList.remove('flex');
-        }
-      });
-
-      document.getElementById('syncForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const url = document.getElementById('supabaseUrlInput').value.trim();
-        const key = document.getElementById('supabaseKeyInput').value.trim();
-        const roomCode = document.getElementById('roomCodeInput').value.trim().toUpperCase();
-
-        if (!url || !key || !roomCode) {
-          showToast('Project URL, Anon Key, 방 코드를 모두 입력해 주세요.');
-          return;
-        }
-
-        syncConfig = { url, key, roomCode };
-        localStorage.setItem(STORAGE_SYNC_KEY, JSON.stringify(syncConfig));
-        await connectSupabaseRoom(true);
-        const modal = document.getElementById('syncModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-      });
-
-      document.getElementById('disconnectSyncBtn').addEventListener('click', () => {
-        if (realtimeChannel && supabaseClient) {
-          supabaseClient.removeChannel(realtimeChannel);
-        }
-        if (pollTimer) clearInterval(pollTimer);
-        supabaseClient = null;
-        realtimeChannel = null;
-        pollTimer = null;
-        syncConfig = { url: '', key: '', roomCode: '' };
-        localStorage.removeItem(STORAGE_SYNC_KEY);
-        updateSyncBadgeUI(false);
-        showToast('실시간 공유 연결이 해제되었습니다.');
-      });
-
-      document.getElementById('copySqlBtn').addEventListener('click', () => {
-        const sql = document.getElementById('sqlSnippetText').textContent;
-        copyTextToClipboard(sql, 'Supabase SQL 코드가 복사되었습니다.');
-      });
-
-      // 초기화 모달
-      document.getElementById('openResetModalBtn').addEventListener('click', () => {
-        const modal = document.getElementById('resetModal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-      });
-
-      document.getElementById('cancelResetBtn').addEventListener('click', () => {
-        const modal = document.getElementById('resetModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-      });
-
-      document.getElementById('confirmResetBtn').addEventListener('click', () => {
-        appState = {
-          items: JSON.parse(JSON.stringify(DEFAULT_ITEMS)),
-          families: JSON.parse(JSON.stringify(DEFAULT_FAMILIES)),
-          settlementSettings: { checkedOnly: true, splitMode: 'equal', childWeight: 0.5 },
-          updatedAt: Date.now()
-        };
-        statusFilter = 'all';
-        categoryFilter = 'all';
-        persistState(true);
-        renderShoppingView();
-        if (activeTab === 'settlement') renderSettlementView();
-
-        const modal = document.getElementById('resetModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        showToast('초기 리스트로 복원되었습니다.');
-      });
-
-      // 삭제 실행 취소
-      document.getElementById('toastUndoBtn').addEventListener('click', undoDeleteItem);
-    }
-
-    // 앱 시작
-    loadInitialState();
-    initEvents();
-    renderShoppingView();
-    loadSyncConfig();
+    // 초기화 및 클라우드 연동 시작
+    renderAll();
+    initCloudSync();
   </script>
 </body>
 </html>
