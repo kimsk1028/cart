@@ -80,7 +80,7 @@
         <div id="progressBar" class="bg-amber-300 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
       </div>
       <div class="flex justify-between items-center mt-3 pt-2.5 border-t border-white/15 text-xs">
-        <span class="text-emerald-100"><i class="fa-solid fa-circle-info mr-1"></i>우측 가족 버튼 터치로 결제자 지정</span>
+        <span class="text-emerald-100"><i class="fa-solid fa-star text-amber-300 mr-1"></i>미구매 필수: <strong id="mustBuyRemainCount" class="text-amber-300">0</strong>개</span>
         <button onclick="copyShoppingText()" class="bg-white/20 hover:bg-white/30 px-2.5 py-1 rounded-lg font-semibold transition">
           <i class="fa-regular fa-copy mr-1"></i>카톡 복사
         </button>
@@ -88,14 +88,15 @@
     </div>
 
     <!-- 필터 바 -->
-    <div class="flex items-center justify-between gap-2">
-      <div class="flex gap-1.5 text-xs font-semibold">
-        <button onclick="setFilter('all')" id="filterAll" class="px-3 py-1.5 rounded-full bg-slate-800 text-white">전체</button>
-        <button onclick="setFilter('unchecked')" id="filterUnchecked" class="px-3 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200">미완료만</button>
-        <button onclick="setFilter('checked')" id="filterChecked" class="px-3 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200">완료됨</button>
+    <div class="flex items-center justify-between gap-1.5">
+      <div class="flex gap-1 text-xs font-semibold overflow-x-auto no-scrollbar">
+        <button onclick="setFilter('all')" id="filterAll" class="px-2.5 py-1.5 rounded-full bg-slate-800 text-white shrink-0">전체</button>
+        <button onclick="setFilter('must')" id="filterMust" class="px-2.5 py-1.5 rounded-full bg-white text-rose-600 border border-rose-200 shrink-0">★ 필수만</button>
+        <button onclick="setFilter('unchecked')" id="filterUnchecked" class="px-2.5 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200 shrink-0">미완료</button>
+        <button onclick="setFilter('checked')" id="filterChecked" class="px-2.5 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200 shrink-0">완료됨</button>
       </div>
-      <button onclick="openItemModal()" class="text-xs font-bold bg-emerald-600 text-white px-3 py-1.5 rounded-full shadow-sm hover:bg-emerald-700 transition">
-        <i class="fa-solid fa-plus mr-1"></i>품목 추가
+      <button onclick="openItemModal()" class="text-xs font-bold bg-emerald-600 text-white px-3 py-1.5 rounded-full shadow-sm hover:bg-emerald-700 transition shrink-0">
+        <i class="fa-solid fa-plus mr-1"></i>추가
       </button>
     </div>
 
@@ -210,6 +211,10 @@
           <label class="block text-xs font-bold text-slate-600 mb-1">결제한 가족</label>
           <select id="itemPayer" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white font-medium"></select>
         </div>
+        <label class="flex items-center gap-2.5 p-3 rounded-xl bg-rose-50 border border-rose-200 cursor-pointer select-none">
+          <input type="checkbox" id="itemMustBuy" class="w-4 h-4 accent-rose-600 rounded" />
+          <span class="text-xs font-extrabold text-rose-700"><i class="fa-solid fa-star text-rose-500 mr-1"></i>아직 안 샀지만 꼭 사야 하는 필수 품목</span>
+        </label>
       </div>
       <div class="flex gap-2 pt-2">
         <button onclick="closeItemModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-bold text-sm">취소</button>
@@ -264,26 +269,26 @@
       splitMode: 'equal',
       childWeight: 0.5,
       items: [
-        { id: '1', category: '단골집 포장', name: '부대찌개 3인분 포장', note: '육수 넉넉히 요청', price: 30000, checked: false, payer: 0 },
-        { id: '2', category: '정육 (마트/정육점)', name: '삼겹살 + 목살', note: '2.5kg', price: 65000, checked: false, payer: 0 },
-        { id: '3', category: '정육 (마트/정육점)', name: '구이용 소시지', note: '1팩', price: 8000, checked: false, payer: 0 },
-        { id: '4', category: '정육 (마트/정육점)', name: '햄 / 스팸류', note: '1캔 (부대찌개 사리 겸용)', price: 5000, checked: false, payer: 0 },
-        { id: '5', category: '식사 & 사리', name: '라면사리', note: '3~4개', price: 2500, checked: false, payer: 0 },
-        { id: '6', category: '식사 & 사리', name: '일반 라면', note: '1번들 (5봉 / 다음날 아침)', price: 4500, checked: false, payer: 0 },
-        { id: '7', category: '식사 & 사리', name: '햇반', note: '12개', price: 13000, checked: false, payer: 0 },
-        { id: '8', category: '식사 & 사리', name: '도시락김', note: '1묶음 (12~16봉)', price: 5000, checked: false, payer: 0 },
-        { id: '9', category: '곁들임 & 소스', name: '맛김치 (썰은 김치)', note: '1kg', price: 9000, checked: false, payer: 0 },
-        { id: '10', category: '곁들임 & 소스', name: '구이용 버섯 (새송이/양송이)', note: '1~2팩', price: 4000, checked: false, payer: 0 },
-        { id: '11', category: '곁들임 & 소스', name: '쌈장 & 허브솔트(소금)', note: '각 1개', price: 6000, checked: false, payer: 0 },
-        { id: '12', category: '음료 & 과일', name: '생수 2L', note: '6병 (찌개 육수 겸용)', price: 4500, checked: false, payer: 0 },
-        { id: '13', category: '음료 & 과일', name: '탄산 / 아이들 음료 1.5L', note: '3~4병', price: 8000, checked: false, payer: 0 },
-        { id: '14', category: '음료 & 과일', name: '제철 과일 1종', note: '귤, 방울토마토 등', price: 12000, checked: false, payer: 0 },
-        { id: '15', category: '간식 & 디저트', name: '대용량 짭짤한 과자', note: '2~3봉 (포카칩, 꼬깔콘 등)', price: 7000, checked: false, payer: 1 },
-        { id: '16', category: '간식 & 디저트', name: '대용량 달콤한 과자', note: '2~3봉 (홈런볼, 칸쵸 등)', price: 7000, checked: false, payer: 1 },
-        { id: '17', category: '간식 & 디저트', name: '대용량 젤리 & 초콜릿', note: '각 1묶음 (게임 상품용)', price: 8000, checked: false, payer: 1 },
-        { id: '18', category: '간식 & 디저트', name: '개별 포장 파이류 1박스', note: '초코파이, 몽쉘 등 (12~16입)', price: 5000, checked: false, payer: 1 },
-        { id: '19', category: '간식 & 디저트', name: '마시멜로 + 나무꼬치 & 쫀드기', note: '숯불 디저트용', price: 5000, checked: false, payer: 1 },
-        { id: '20', category: '일회용품 & 기타', name: '일회용품 세트', note: '종이컵, 접시, 나무젓가락, 물티슈, 키친타월', price: 8000, checked: false, payer: 0 }
+        { id: '1', category: '단골집 포장', name: '부대찌개 3인분 포장', note: '육수 넉넉히 요청', price: 30000, checked: false, mustBuy: true, payer: 0 },
+        { id: '2', category: '정육 (마트/정육점)', name: '삼겹살 + 목살', note: '2.5kg', price: 65000, checked: false, mustBuy: true, payer: 0 },
+        { id: '3', category: '정육 (마트/정육점)', name: '구이용 소시지', note: '1팩', price: 8000, checked: false, mustBuy: false, payer: 0 },
+        { id: '4', category: '정육 (마트/정육점)', name: '햄 / 스팸류', note: '1캔 (부대찌개 사리 겸용)', price: 5000, checked: false, mustBuy: false, payer: 0 },
+        { id: '5', category: '식사 & 사리', name: '라면사리', note: '3~4개', price: 2500, checked: false, mustBuy: false, payer: 0 },
+        { id: '6', category: '식사 & 사리', name: '일반 라면', note: '1번들 (5봉 / 다음날 아침)', price: 4500, checked: false, mustBuy: false, payer: 0 },
+        { id: '7', category: '식사 & 사리', name: '햇반', note: '12개', price: 13000, checked: false, mustBuy: true, payer: 0 },
+        { id: '8', category: '식사 & 사리', name: '도시락김', note: '1묶음 (12~16봉)', price: 5000, checked: false, mustBuy: false, payer: 0 },
+        { id: '9', category: '곁들임 & 소스', name: '맛김치 (썰은 김치)', note: '1kg', price: 9000, checked: false, mustBuy: false, payer: 0 },
+        { id: '10', category: '곁들임 & 소스', name: '구이용 버섯 (새송이/양송이)', note: '1~2팩', price: 4000, checked: false, mustBuy: false, payer: 0 },
+        { id: '11', category: '곁들임 & 소스', name: '쌈장 & 허브솔트(소금)', note: '각 1개', price: 6000, checked: false, mustBuy: false, payer: 0 },
+        { id: '12', category: '음료 & 과일', name: '생수 2L', note: '6병 (찌개 육수 겸용)', price: 4500, checked: false, mustBuy: true, payer: 0 },
+        { id: '13', category: '음료 & 과일', name: '탄산 / 아이들 음료 1.5L', note: '3~4병', price: 8000, checked: false, mustBuy: false, payer: 0 },
+        { id: '14', category: '음료 & 과일', name: '제철 과일 1종', note: '귤, 방울토마토 등', price: 12000, checked: false, mustBuy: false, payer: 0 },
+        { id: '15', category: '간식 & 디저트', name: '대용량 짭짤한 과자', note: '2~3봉 (포카칩, 꼬깔콘 등)', price: 7000, checked: false, mustBuy: false, payer: 1 },
+        { id: '16', category: '간식 & 디저트', name: '대용량 달콤한 과자', note: '2~3봉 (홈런볼, 칸쵸 등)', price: 7000, checked: false, mustBuy: false, payer: 1 },
+        { id: '17', category: '간식 & 디저트', name: '대용량 젤리 & 초콜릿', note: '각 1묶음 (게임 상품용)', price: 8000, checked: false, mustBuy: false, payer: 1 },
+        { id: '18', category: '간식 & 디저트', name: '개별 포장 파이류 1박스', note: '초코파이, 몽쉘 등 (12~16입)', price: 5000, checked: false, mustBuy: false, payer: 1 },
+        { id: '19', category: '간식 & 디저트', name: '마시멜로 + 나무꼬치 & 쫀드기', note: '숯불 디저트용', price: 5000, checked: false, mustBuy: false, payer: 1 },
+        { id: '20', category: '일회용품 & 기타', name: '일회용품 세트', note: '종이컵, 접시, 나무젓가락, 물티슈, 키친타월', price: 8000, checked: false, mustBuy: true, payer: 0 }
       ],
       extraExpenses: []
     };
@@ -328,10 +333,8 @@
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         updateSyncBadge('syncing');
 
-        // 1. 페이지 접속 시 서버 최신 데이터 불러오기
         await fetchFromCloud(true);
 
-        // 2. 다른 가족이 수정할 때 실시간 구독
         supabaseClient
           .channel('pension_sync_channel')
           .on('postgres_changes', {
@@ -349,7 +352,6 @@
           })
           .subscribe();
 
-        // 3. 백그라운드에서 다시 화면을 켰을 때(포커스 복귀 시) 최신 내역 자동 동기화
         document.addEventListener('visibilitychange', () => {
           if (document.visibilityState === 'visible' && isCloudConnected) {
             fetchFromCloud(false);
@@ -443,11 +445,15 @@
 
     function setFilter(f) {
       currentFilter = f;
-      ['all', 'unchecked', 'checked'].forEach(key => {
+      const styles = {
+        all: ['bg-slate-800 text-white', 'bg-white text-slate-600 border border-slate-200'],
+        must: ['bg-rose-600 text-white', 'bg-white text-rose-600 border border-rose-200'],
+        unchecked: ['bg-slate-800 text-white', 'bg-white text-slate-600 border border-slate-200'],
+        checked: ['bg-slate-800 text-white', 'bg-white text-slate-600 border border-slate-200']
+      };
+      ['all', 'must', 'unchecked', 'checked'].forEach(key => {
         const btn = document.getElementById('filter' + key.charAt(0).toUpperCase() + key.slice(1));
-        btn.className = key === f
-          ? 'px-3 py-1.5 rounded-full bg-slate-800 text-white'
-          : 'px-3 py-1.5 rounded-full bg-white text-slate-600 border border-slate-200';
+        btn.className = 'px-2.5 py-1.5 rounded-full shrink-0 ' + (key === f ? styles[key][0] : styles[key][1]);
       });
       renderShoppingList();
     }
@@ -456,17 +462,20 @@
       const container = document.getElementById('shoppingListContainer');
       const totalItems = state.items.length;
       const checkedItems = state.items.filter(i => i.checked).length;
+      const mustBuyRemain = state.items.filter(i => i.mustBuy && !i.checked).length;
       const totalAmt = state.items.reduce((s, i) => s + (Number(i.price) || 0), 0);
       const checkedAmt = state.items.filter(i => i.checked).reduce((s, i) => s + (Number(i.price) || 0), 0);
 
       document.getElementById('checkedCount').textContent = checkedItems;
       document.getElementById('totalCount').textContent = totalItems;
+      document.getElementById('mustBuyRemainCount').textContent = mustBuyRemain;
       document.getElementById('checkedAmount').textContent = checkedAmt.toLocaleString();
       document.getElementById('totalAmount').textContent = totalAmt.toLocaleString();
       const pct = totalItems === 0 ? 0 : Math.round((checkedItems / totalItems) * 100);
       document.getElementById('progressBar').style.width = pct + '%';
 
       const filtered = state.items.filter(item => {
+        if (currentFilter === 'must') return !!item.mustBuy;
         if (currentFilter === 'unchecked') return !item.checked;
         if (currentFilter === 'checked') return item.checked;
         return true;
@@ -489,14 +498,24 @@
         const rows = catItems.map(item => {
           const famName = state.families[item.payer]?.name || '가족 1';
           const badgeClass = payerColors[item.payer % 3];
+          const isMust = !!item.mustBuy;
+          const cardBorder = item.checked
+            ? 'border-slate-100 bg-slate-50/70'
+            : isMust
+              ? 'border-rose-300 bg-rose-50/30 shadow-xs'
+              : 'border-slate-200 bg-white shadow-xs';
+
           return `
-            <div class="flex items-center justify-between p-3 bg-white rounded-xl border ${item.checked ? 'border-slate-100 bg-slate-50/70' : 'border-slate-200 shadow-xs'} transition">
-              <div onclick="toggleItem('${item.id}')" class="flex items-start gap-3 flex-1 cursor-pointer select-none pr-2">
-                <div class="mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition ${item.checked ? 'bg-emerald-600 border-emerald-600 text-white' : 'border-slate-300 bg-white'}">
+            <div class="flex items-center justify-between p-3 rounded-xl border ${cardBorder} transition">
+              <div onclick="toggleItem('${item.id}')" class="flex items-start gap-2.5 flex-1 cursor-pointer select-none pr-1.5">
+                <div class="mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition ${item.checked ? 'bg-emerald-600 border-emerald-600 text-white' : isMust ? 'border-rose-400 bg-white' : 'border-slate-300 bg-white'}">
                   ${item.checked ? '<i class="fa-solid fa-check text-[11px]"></i>' : ''}
                 </div>
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm font-bold leading-snug ${item.checked ? 'line-through text-slate-400' : 'text-slate-800'}">${escapeHtml(item.name)}</p>
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    ${isMust && !item.checked ? '<span class="bg-rose-600 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded leading-none">필수</span>' : ''}
+                    <p class="text-sm font-bold leading-snug ${item.checked ? 'line-through text-slate-400' : 'text-slate-800'}">${escapeHtml(item.name)}</p>
+                  </div>
                   <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5 text-xs ${item.checked ? 'text-slate-400' : 'text-slate-500'}">
                     ${item.note ? `<span>${escapeHtml(item.note)}</span>` : ''}
                     <span class="font-semibold ${item.checked ? 'text-slate-400' : 'text-slate-700'}">${(Number(item.price) || 0).toLocaleString()}원</span>
@@ -504,6 +523,10 @@
                 </div>
               </div>
               <div class="flex items-center gap-1 shrink-0">
+                <button onclick="toggleMustBuy('${item.id}')" title="꼭 사야 할 필수 품목 지정/해제"
+                  class="px-1.5 py-1 rounded-lg border text-[11px] font-bold transition ${isMust ? 'bg-rose-100 text-rose-700 border-rose-300' : 'bg-slate-50 text-slate-400 border-slate-200 hover:text-rose-500'}">
+                  <i class="fa-${isMust ? 'solid' : 'regular'} fa-star"></i>
+                </button>
                 <button onclick="cyclePayer('${item.id}')" title="결제 가족 변경" class="text-[11px] font-bold px-2 py-1 rounded-lg border ${badgeClass} active:scale-95 transition">
                   ${escapeHtml(famName)}
                 </button>
@@ -535,6 +558,15 @@
       if (item) {
         item.checked = !item.checked;
         saveState();
+      }
+    }
+
+    function toggleMustBuy(id) {
+      const item = state.items.find(i => i.id === id);
+      if (item) {
+        item.mustBuy = !item.mustBuy;
+        saveState();
+        showToast(item.mustBuy ? '★ 꼭 사야 할 필수 품목으로 지정했습니다.' : '필수 지정이 해제되었습니다.');
       }
     }
 
@@ -578,6 +610,7 @@
         document.getElementById('itemNote').value = item.note;
         document.getElementById('itemPrice').value = item.price;
         document.getElementById('itemPayer').value = item.payer;
+        document.getElementById('itemMustBuy').checked = !!item.mustBuy;
       } else {
         document.getElementById('itemModalTitle').textContent = '새 장보기 품목 추가';
         document.getElementById('editItemId').value = '';
@@ -585,6 +618,7 @@
         document.getElementById('itemNote').value = '';
         document.getElementById('itemPrice').value = '';
         document.getElementById('itemPayer').value = 0;
+        document.getElementById('itemMustBuy').checked = true;
       }
       document.getElementById('itemModal').classList.remove('hidden');
     }
@@ -600,6 +634,7 @@
       const note = document.getElementById('itemNote').value.trim();
       const price = parseInt(document.getElementById('itemPrice').value, 10) || 0;
       const payer = parseInt(document.getElementById('itemPayer').value, 10) || 0;
+      const mustBuy = document.getElementById('itemMustBuy').checked;
 
       if (!name) {
         alert('품목명을 입력해 주세요.');
@@ -608,11 +643,11 @@
 
       if (id) {
         const item = state.items.find(i => i.id === id);
-        if (item) Object.assign(item, { category, name, note, price, payer });
+        if (item) Object.assign(item, { category, name, note, price, payer, mustBuy });
       } else {
         state.items.push({
           id: Date.now().toString(),
-          category, name, note, price, checked: false, payer
+          category, name, note, price, checked: false, mustBuy, payer
         });
       }
       closeItemModal();
@@ -804,8 +839,9 @@
         lines.push(`[${cat}]`);
         state.items.filter(i => i.category === cat).forEach(i => {
           const mark = i.checked ? '✅' : '⬜';
+          const mustTag = (i.mustBuy && !i.checked) ? '[필수] ' : '';
           const fam = state.families[i.payer]?.name || '';
-          lines.push(`${mark} ${i.name}${i.note ? ' (' + i.note + ')' : ''} - ${Number(i.price).toLocaleString()}원 [${fam}]`);
+          lines.push(`${mark} ${mustTag}${i.name}${i.note ? ' (' + i.note + ')' : ''} - ${Number(i.price).toLocaleString()}원 [${fam}]`);
         });
         lines.push('');
       });
