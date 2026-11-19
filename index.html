@@ -70,7 +70,7 @@
           </p>
         </div>
         <div class="text-right">
-          <p class="text-emerald-100 text-xs font-medium">체크된 합계 / 전체 예상</p>
+          <p class="text-emerald-100 text-xs font-medium">완료된 합계 / 전체 예상</p>
           <p class="text-sm font-bold">
             <span id="checkedAmount">0</span>원 <span class="text-emerald-200 font-normal">/ <span id="totalAmount">0</span>원</span>
           </p>
@@ -172,15 +172,27 @@
     </div>
   </main>
 
-  <!-- ==================== 품목 추가/수정 모달 ==================== -->
+  <!-- ==================== 품목 추가/수정(옵션) 모달 ==================== -->
   <div id="itemModal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-2xl p-5 space-y-4 shadow-2xl">
       <div class="flex justify-between items-center">
-        <h3 id="itemModalTitle" class="text-base font-extrabold text-slate-900">장보기 품목 추가</h3>
+        <h3 id="itemModalTitle" class="text-base font-extrabold text-slate-900">장보기 품목 옵션</h3>
         <button onclick="closeItemModal()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <input type="hidden" id="editItemId" />
       <div class="space-y-3 text-sm">
+        <!-- 완료 / 미완료 상태 전환 스위치 -->
+        <label class="flex items-center justify-between p-3 rounded-xl bg-emerald-50 border border-emerald-200 cursor-pointer select-none">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-circle-check text-emerald-600 text-base"></i>
+            <div>
+              <p class="text-xs font-extrabold text-emerald-900">장보기 구매 완료 상태</p>
+              <p class="text-[11px] text-emerald-700">체크 시 완료됨, 해제 시 미완료로 전환됩니다</p>
+            </div>
+          </div>
+          <input type="checkbox" id="itemChecked" class="w-5 h-5 accent-emerald-600 rounded cursor-pointer" />
+        </label>
+
         <div>
           <label class="block text-xs font-bold text-slate-600 mb-1">카테고리</label>
           <select id="itemCategory" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 bg-white font-medium">
@@ -500,25 +512,26 @@
           const badgeClass = payerColors[item.payer % 3];
           const isMust = !!item.mustBuy;
           const cardBorder = item.checked
-            ? 'border-slate-100 bg-slate-50/70'
+            ? 'border-emerald-200 bg-emerald-50/35'
             : isMust
               ? 'border-rose-300 bg-rose-50/30 shadow-xs'
               : 'border-slate-200 bg-white shadow-xs';
 
           return `
             <div class="flex items-center justify-between p-3 rounded-xl border ${cardBorder} transition">
-              <div onclick="toggleItem('${item.id}')" class="flex items-start gap-2.5 flex-1 cursor-pointer select-none pr-1.5">
-                <div class="mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition ${item.checked ? 'bg-emerald-600 border-emerald-600 text-white' : isMust ? 'border-rose-400 bg-white' : 'border-slate-300 bg-white'}">
+              <div class="flex items-start gap-2.5 flex-1 pr-1.5">
+                <div class="mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${item.checked ? 'bg-emerald-600 border-emerald-600 text-white' : isMust ? 'border-rose-400 bg-white' : 'border-slate-300 bg-white'}">
                   ${item.checked ? '<i class="fa-solid fa-check text-[11px]"></i>' : ''}
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-1.5 flex-wrap">
+                    ${item.checked ? '<span class="bg-emerald-600 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded leading-none">완료</span>' : ''}
                     ${isMust && !item.checked ? '<span class="bg-rose-600 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded leading-none">필수</span>' : ''}
-                    <p class="text-sm font-bold leading-snug ${item.checked ? 'line-through text-slate-400' : 'text-slate-800'}">${escapeHtml(item.name)}</p>
+                    <p class="text-sm font-bold leading-snug text-slate-800">${escapeHtml(item.name)}</p>
                   </div>
-                  <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5 text-xs ${item.checked ? 'text-slate-400' : 'text-slate-500'}">
+                  <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5 text-xs text-slate-500">
                     ${item.note ? `<span>${escapeHtml(item.note)}</span>` : ''}
-                    <span class="font-semibold ${item.checked ? 'text-slate-400' : 'text-slate-700'}">${(Number(item.price) || 0).toLocaleString()}원</span>
+                    <span class="font-semibold text-slate-700">${(Number(item.price) || 0).toLocaleString()}원</span>
                   </div>
                 </div>
               </div>
@@ -530,10 +543,10 @@
                 <button onclick="cyclePayer('${item.id}')" title="결제 가족 변경" class="text-[11px] font-bold px-2 py-1 rounded-lg border ${badgeClass} active:scale-95 transition">
                   ${escapeHtml(famName)}
                 </button>
-                <button onclick="openItemModal('${item.id}')" class="p-1.5 text-slate-400 hover:text-indigo-600">
+                <button onclick="openItemModal('${item.id}')" title="옵션 및 완료 상태 변경" class="p-1.5 text-slate-500 hover:text-indigo-600">
                   <i class="fa-solid fa-pen text-xs"></i>
                 </button>
-                <button onclick="deleteItem('${item.id}')" class="p-1.5 text-slate-400 hover:text-rose-500">
+                <button onclick="deleteItem('${item.id}')" title="삭제" class="p-1.5 text-slate-400 hover:text-rose-500">
                   <i class="fa-solid fa-trash text-xs"></i>
                 </button>
               </div>
@@ -551,14 +564,6 @@
           </section>
         `;
       }).join('');
-    }
-
-    function toggleItem(id) {
-      const item = state.items.find(i => i.id === id);
-      if (item) {
-        item.checked = !item.checked;
-        saveState();
-      }
     }
 
     function toggleMustBuy(id) {
@@ -603,8 +608,9 @@
 
       if (id) {
         const item = state.items.find(i => i.id === id);
-        document.getElementById('itemModalTitle').textContent = '장보기 품목 수정';
+        document.getElementById('itemModalTitle').textContent = '장보기 품목 옵션 / 수정';
         document.getElementById('editItemId').value = item.id;
+        document.getElementById('itemChecked').checked = !!item.checked;
         document.getElementById('itemCategory').value = item.category;
         document.getElementById('itemName').value = item.name;
         document.getElementById('itemNote').value = item.note;
@@ -614,6 +620,7 @@
       } else {
         document.getElementById('itemModalTitle').textContent = '새 장보기 품목 추가';
         document.getElementById('editItemId').value = '';
+        document.getElementById('itemChecked').checked = false;
         document.getElementById('itemName').value = '';
         document.getElementById('itemNote').value = '';
         document.getElementById('itemPrice').value = '';
@@ -629,6 +636,7 @@
 
     function saveItem() {
       const id = document.getElementById('editItemId').value;
+      const checked = document.getElementById('itemChecked').checked;
       const category = document.getElementById('itemCategory').value;
       const name = document.getElementById('itemName').value.trim();
       const note = document.getElementById('itemNote').value.trim();
@@ -643,16 +651,16 @@
 
       if (id) {
         const item = state.items.find(i => i.id === id);
-        if (item) Object.assign(item, { category, name, note, price, payer, mustBuy });
+        if (item) Object.assign(item, { checked, category, name, note, price, payer, mustBuy });
       } else {
         state.items.push({
           id: Date.now().toString(),
-          category, name, note, price, checked: false, mustBuy, payer
+          category, name, note, price, checked, mustBuy, payer
         });
       }
       closeItemModal();
       saveState();
-      showToast(id ? '품목이 수정되었습니다.' : '새 품목이 추가되었습니다.');
+      showToast(id ? '품목 옵션이 저장되었습니다.' : '새 품목이 추가되었습니다.');
     }
 
     // ==================== 정산 탭 로직 ====================
